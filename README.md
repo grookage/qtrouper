@@ -1,4 +1,4 @@
-# QTrouper 
+# QTrouper [![Build](https://github.com/grookage/qtrouper/actions/workflows/build.yml/badge.svg)](https://github.com/grookage/qtrouper/actions/workflows/build.yml)
 
 > Do raindrops follow a certain hierarchy when they fall?
 > - by Anthony T. Hincks
