@@ -45,13 +45,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+@SuppressWarnings("unchecked")
 public class HandlerTest {
 
     private Channel channel;
     private RabbitConnection rabbitConnection;
-    private String mainQueueHandlerTag = "MAIN_QUEUE_HANDLER_TAG";
-    private String sidelineQueueHandlerTag = "SIDELINE_QUEUE_HANDLER_TAG";
-    private Long deliveryTag = 73656L;
+    private final String mainQueueHandlerTag = "MAIN_QUEUE_HANDLER_TAG";
+    private final String sidelineQueueHandlerTag = "SIDELINE_QUEUE_HANDLER_TAG";
+    private final Long deliveryTag = 73656L;
     private Envelope envelope;
     private ArgumentCaptor<Long> deliveryTagCaptor;
     private ArgumentCaptor<Boolean> boolCaptor;

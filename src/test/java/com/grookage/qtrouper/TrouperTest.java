@@ -67,10 +67,10 @@ public class TrouperTest {
 
     private RabbitConnection rabbitConnection;
 
-    private RetryConfiguration getRetryConfiguration(boolean enabled, int maxRetries){
+    private RetryConfiguration getRetryConfiguration(){
         return RetryConfiguration.builder()
-                .enabled(enabled)
-                .maxRetries(maxRetries)
+                .enabled(false)
+                .maxRetries(10)
                 .ttlMs(100)
                 .build();
     }
@@ -132,7 +132,7 @@ public class TrouperTest {
                 .concurrency(0)
                 .prefetchCount(10)
                 .consumerDisabled(false)
-                .retry(getRetryConfiguration(false, 10))
+                .retry(getRetryConfiguration())
                 .sideline(getSidelineConfiguration(false, 0))
                 .build();
         val trouper = getTrouperAfterStart(queueConfiguration);
@@ -147,7 +147,7 @@ public class TrouperTest {
                 .concurrency(0)
                 .prefetchCount(10)
                 .consumerDisabled(false)
-                .retry(getRetryConfiguration(false, 10))
+                .retry(getRetryConfiguration())
                 .sideline(getSidelineConfiguration(true, 1))
                 .build();
         when(channel.basicConsume(anyString(), anyBoolean(), any())).thenReturn("tag");
@@ -164,7 +164,7 @@ public class TrouperTest {
                 .concurrency(10)
                 .prefetchCount(10)
                 .consumerDisabled(false)
-                .retry(getRetryConfiguration(false, 10))
+                .retry(getRetryConfiguration())
                 .sideline(getSidelineConfiguration(true, 10))
                 .build();
         val trouper = getTrouperAfterStart(queueConfiguration);

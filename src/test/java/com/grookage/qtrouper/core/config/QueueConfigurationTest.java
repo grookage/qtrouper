@@ -25,15 +25,15 @@ public class QueueConfigurationTest {
   public void testQueueConfigurationDefaultViaConstructor() {
       val queueConfiguration = new QueueConfiguration();
       Assert.assertFalse(queueConfiguration.isConsumerDisabled());
-      Assert.assertEquals(queueConfiguration.getConcurrency(), 3);
-      Assert.assertEquals(queueConfiguration.getNamespace(), "qtrouper");
+      Assert.assertEquals(3, queueConfiguration.getConcurrency());
+      Assert.assertEquals("qtrouper", queueConfiguration.getNamespace());
   }
 
   @Test
   public void testQueueConfigurationDefaultViaBuilder() {
       val queueViaBuilder = QueueConfiguration.builder().build();
       Assert.assertFalse(queueViaBuilder.isConsumerDisabled());
-      Assert.assertEquals(queueViaBuilder.getConcurrency(), 3);
-      Assert.assertEquals(queueViaBuilder.getNamespace(), "qtrouper");
+      Assert.assertEquals(3, queueViaBuilder.getConcurrency());
+      Assert.assertEquals("qtrouper", queueViaBuilder.getNamespace());
   }
 }
