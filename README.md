@@ -11,7 +11,7 @@ Use the following maven dependency:
 <dependency>
     <groupId>com.grookage.qtrouper</groupId>
     <artifactId>qtrouper</artifactId>
-    <version>0.0.1</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
