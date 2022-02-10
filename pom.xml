@@ -69,14 +69,8 @@
         <jacoco.reportPath>${project.basedir}/../target/jacoco.exec</jacoco.reportPath>
 
         <!--Sonar properties-->
-        <sonar.sources>src/main</sonar.sources>
-        <sonar.tests>src/test</sonar.tests>
-        <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-        <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-        <sonar.jacoco.reportPaths>${project.basedir}/../target/jacoco.exec</sonar.jacoco.reportPaths>
-        <sonar.jacoco.itReportPath>${project.basedir}/../target/jacoco-it.exec</sonar.jacoco.itReportPath>
-        <sonar.language>java</sonar.language>
-        <sonar.version>3.6.0.1398</sonar.version>
+        <sonar.organization>grookage</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <dependencies>
