@@ -1,31 +1,24 @@
-# QTrouper [![Travis build status](https://travis-ci.org/koushikr/qtrouper.svg?branch=master)](https://travis-ci.org/koushikr/qtrouper)
+# QTrouper 
 
 > Do raindrops follow a certain hierarchy when they fall?
 > - by Anthony T. Hincks
 
 
 ### Maven Dependency
-Use the following repository:
-```xml
-<repository>
-    <id>clojars</id>
-    <name>Clojars repository</name>
-    <url>https://clojars.org/repo</url>
-</repository>
-```
+
 Use the following maven dependency:
 ```xml
 <dependency>
-    <groupId>io.github.qtrouper</groupId>
+    <groupId>com.grookage.qtrouper</groupId>
     <artifactId>qtrouper</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.1</version>
 </dependency>
 ```
 
 ### Build instructions
   - Clone the source:
 
-        git clone github.com/koushikr/qtrouper
+        git clone github.com/grookage/qtrouper
 
   - Build
 
