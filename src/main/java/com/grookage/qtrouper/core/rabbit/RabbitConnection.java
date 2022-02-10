@@ -23,14 +23,14 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.impl.StandardMetricsCollector;
-
-import java.util.Map;
-import java.util.concurrent.Executors;
-import javax.inject.Singleton;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+
+import javax.inject.Singleton;
+import java.util.Map;
+import java.util.concurrent.Executors;
 
 /**
  * @author koushik

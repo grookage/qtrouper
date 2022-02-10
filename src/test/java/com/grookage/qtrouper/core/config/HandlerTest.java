@@ -15,19 +15,8 @@
  */
 package com.grookage.qtrouper.core.config;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.Envelope;
 import com.grookage.qtrouper.Trouper;
 import com.grookage.qtrouper.Trouper.Handler;
 import com.grookage.qtrouper.core.models.QAccessInfo;
@@ -35,15 +24,22 @@ import com.grookage.qtrouper.core.models.QueueContext;
 import com.grookage.qtrouper.core.rabbit.RabbitConfiguration;
 import com.grookage.qtrouper.core.rabbit.RabbitConnection;
 import com.grookage.qtrouper.utils.SerDe;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Set;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.Envelope;
 import lombok.val;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
+
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings("unchecked")
 public class HandlerTest {
