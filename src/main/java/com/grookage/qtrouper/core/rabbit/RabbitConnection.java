@@ -59,7 +59,7 @@ public class RabbitConnection {
     @SneakyThrows
     public void start() {
         log.info("Starting Rabbit Connection");
-        val factory = new ConnectionFactory();
+        final var factory = new ConnectionFactory();
         if (!Strings.isNullOrEmpty(config.getUserName())) factory.setUsername(config.getUserName());
         if (!Strings.isNullOrEmpty(config.getPassword())) factory.setPassword(config.getPassword());
         if (!Strings.isNullOrEmpty(config.getVirtualHost())) factory.setVirtualHost(config.getVirtualHost());

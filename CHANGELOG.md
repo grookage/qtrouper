@@ -1,6 +1,7 @@
 ### Version 1.0.0
 
 - Moved to com.grookage from io.grookage.
+- Moved to java11 and dw 2.
 
 ### Version 0.0.2
 

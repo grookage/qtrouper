@@ -33,11 +33,11 @@ public class TrouperHealthCheck extends HealthCheck{
 
     @Override
     protected Result check() throws Exception {
-        val connection = rabbitConnection.getConnection();
+        final var connection = rabbitConnection.getConnection();
         Result result;
         if (connection != null && connection.isOpen()) {
             try {
-                val channel = connection.createChannel();
+                final var channel = connection.createChannel();
                 channel.close();
                 result = Result.healthy();
             } catch (IOException e) {

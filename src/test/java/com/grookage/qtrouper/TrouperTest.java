@@ -88,8 +88,8 @@ public class TrouperTest {
     }
 
     private TestTrouper getTrouperAfterStart(QueueConfiguration queueConfiguration) throws Exception {
-        val rmqOpts = mock(Map.class);
-        val rabbitConfiguration = RabbitConfiguration.builder()
+        final var rmqOpts = mock(Map.class);
+        final var rabbitConfiguration = RabbitConfiguration.builder()
                 .brokers(new ArrayList<>())
                 .password("")
                 .userName("")
@@ -101,7 +101,7 @@ public class TrouperTest {
         when(rabbitConnection.newChannel()).thenReturn(channel);
         when(rabbitConnection.getConnection()).thenReturn(connection);
         when(rabbitConnection.channel()).thenReturn(channel);
-        val testTrouper = new TestTrouper(queueConfiguration.getQueueName(), queueConfiguration,
+        final var testTrouper = new TestTrouper(queueConfiguration.getQueueName(), queueConfiguration,
                 rabbitConnection, QueueContext.class, new HashSet<>());
         testTrouper.start();
         verify(channel, times(2)).exchangeDeclare(
@@ -113,20 +113,20 @@ public class TrouperTest {
 
     @Test
     public void trouperStartTestWithNoConsumers() throws Exception {
-        val queueConfiguration = QueueConfiguration.builder()
+        final var queueConfiguration = QueueConfiguration.builder()
                 .queueName("queue")
                 .namespace(DEFAULT_NAMESPACE)
                 .concurrency(0)
                 .prefetchCount(10)
                 .consumerDisabled(true)
                 .build();
-        val trouper = getTrouperAfterStart(queueConfiguration);
+        final var trouper = getTrouperAfterStart(queueConfiguration);
         trouper.stop();
     }
 
     @Test
     public void trouperStartTestWithNoRetryAndSideline() throws Exception {
-        val queueConfiguration = QueueConfiguration.builder()
+        final var queueConfiguration = QueueConfiguration.builder()
                 .queueName("queue")
                 .namespace(DEFAULT_NAMESPACE)
                 .concurrency(0)
@@ -135,13 +135,13 @@ public class TrouperTest {
                 .retry(getRetryConfiguration())
                 .sideline(getSidelineConfiguration(false, 0))
                 .build();
-        val trouper = getTrouperAfterStart(queueConfiguration);
+        final var trouper = getTrouperAfterStart(queueConfiguration);
         trouper.stop();
     }
 
     @Test
     public void trouperStartTestWithOnlySideline() throws Exception {
-        val queueConfiguration = QueueConfiguration.builder()
+        final var queueConfiguration = QueueConfiguration.builder()
                 .queueName("queue")
                 .namespace(DEFAULT_NAMESPACE)
                 .concurrency(0)
@@ -151,14 +151,14 @@ public class TrouperTest {
                 .sideline(getSidelineConfiguration(true, 1))
                 .build();
         when(channel.basicConsume(anyString(), anyBoolean(), any())).thenReturn("tag");
-        val trouper = getTrouperAfterStart(queueConfiguration);
+        final var trouper = getTrouperAfterStart(queueConfiguration);
         Assert.assertEquals(1, trouper.getHandlers().size());
         trouper.stop();
     }
 
     @Test
     public void trouperStartWithAllEncompassingConfig() throws Exception {
-        val queueConfiguration = QueueConfiguration.builder()
+        final var queueConfiguration = QueueConfiguration.builder()
                 .queueName("queue")
                 .namespace(DEFAULT_NAMESPACE)
                 .concurrency(10)
@@ -167,7 +167,7 @@ public class TrouperTest {
                 .retry(getRetryConfiguration())
                 .sideline(getSidelineConfiguration(true, 10))
                 .build();
-        val trouper = getTrouperAfterStart(queueConfiguration);
+        final var trouper = getTrouperAfterStart(queueConfiguration);
         Assert.assertEquals(20, trouper.getHandlers().size());
         trouper.stop();
     }

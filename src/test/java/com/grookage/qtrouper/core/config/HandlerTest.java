@@ -67,8 +67,8 @@ public class HandlerTest {
     }
 
     private void setupBaseMocks() {
-        val rmqOpts = mock(Map.class);
-        val rabbitConfiguration = RabbitConfiguration.builder()
+        final var rmqOpts = mock(Map.class);
+        final var rabbitConfiguration = RabbitConfiguration.builder()
             .brokers(new ArrayList<>())
             .password("")
             .userName("")
@@ -86,7 +86,7 @@ public class HandlerTest {
 
     private Handler getHandlerAfterSettingUp(String queueTag,
                                              ExceptionInterface testInterface) throws IOException {
-        val queueConfiguration = QueueConfiguration.builder()
+        final var queueConfiguration = QueueConfiguration.builder()
             .retry(RetryConfiguration.builder()
                 .enabled(false)
                 .build())
@@ -102,7 +102,7 @@ public class HandlerTest {
             .thenReturn(sidelineQueueHandlerTag);
 
         // Create a trouper
-        val testTrouper = new ExceptionTrouper(queueConfiguration.getQueueName(),
+        final var testTrouper = new ExceptionTrouper(queueConfiguration.getQueueName(),
             queueConfiguration, rabbitConnection, QueueContext.class,
             Sets.newHashSet(KnowException.class), testInterface);
         testTrouper.start();
@@ -118,8 +118,8 @@ public class HandlerTest {
     @Test
     public void testBasicAckAndSidelineWhenTrouperProcessThrowUnknownException() throws IOException {
 
-        val exceptionInterface = mock(ExceptionInterface.class);
-        val testHandler = getHandlerAfterSettingUp(mainQueueHandlerTag, exceptionInterface);
+        final var exceptionInterface = mock(ExceptionInterface.class);
+        final var testHandler = getHandlerAfterSettingUp(mainQueueHandlerTag, exceptionInterface);
 
         when(exceptionInterface.process()).thenThrow(new RuntimeException("test exp"));
 
@@ -134,8 +134,8 @@ public class HandlerTest {
 
     @Test
     public void testBasicAckWhenTrouperSidelineIsSuccess() throws IOException {
-        val exceptionInterface = mock(ExceptionInterface.class);
-        val testHandler = getHandlerAfterSettingUp(sidelineQueueHandlerTag, exceptionInterface);
+        final var exceptionInterface = mock(ExceptionInterface.class);
+        final var testHandler = getHandlerAfterSettingUp(sidelineQueueHandlerTag, exceptionInterface);
 
         when(exceptionInterface.processSideline()).thenReturn(true);
 
@@ -149,8 +149,8 @@ public class HandlerTest {
 
     @Test
     public void testBasicRejectWhenTrouperSidelineIsFailure() throws IOException {
-        val exceptionInterface = mock(ExceptionInterface.class);
-        val testHandler = getHandlerAfterSettingUp(sidelineQueueHandlerTag, exceptionInterface);
+        final var exceptionInterface = mock(ExceptionInterface.class);
+        final var testHandler = getHandlerAfterSettingUp(sidelineQueueHandlerTag, exceptionInterface);
 
         when(exceptionInterface.processSideline()).thenReturn(false);
 
@@ -164,8 +164,8 @@ public class HandlerTest {
 
     @Test
     public void testBasicAckWhenTrouperSidelineThrowsKnowException() throws IOException {
-        val exceptionInterface = mock(ExceptionInterface.class);
-        val testHandler = getHandlerAfterSettingUp(sidelineQueueHandlerTag, exceptionInterface);
+        final var exceptionInterface = mock(ExceptionInterface.class);
+        final var testHandler = getHandlerAfterSettingUp(sidelineQueueHandlerTag, exceptionInterface);
 
         when(exceptionInterface.processSideline()).thenThrow(new KnowException());
 
@@ -179,8 +179,8 @@ public class HandlerTest {
 
     @Test
     public void testBasicAckWhenTrouperSidelineThrowsUnKnowException() throws IOException {
-        val exceptionInterface = mock(ExceptionInterface.class);
-        val testHandler = getHandlerAfterSettingUp(sidelineQueueHandlerTag, exceptionInterface);
+        final var exceptionInterface = mock(ExceptionInterface.class);
+        final var testHandler = getHandlerAfterSettingUp(sidelineQueueHandlerTag, exceptionInterface);
 
         when(exceptionInterface.processSideline()).thenThrow(new RuntimeException());
 
@@ -194,8 +194,8 @@ public class HandlerTest {
 
     @Test
     public void testBasicAckWhenTrouperProcessIsSuccess() throws IOException {
-        val exceptionInterface = mock(ExceptionInterface.class);
-        val testHandler = getHandlerAfterSettingUp(mainQueueHandlerTag, exceptionInterface);
+        final var exceptionInterface = mock(ExceptionInterface.class);
+        final var testHandler = getHandlerAfterSettingUp(mainQueueHandlerTag, exceptionInterface);
 
         when(exceptionInterface.process()).thenReturn(true);
 
@@ -209,8 +209,8 @@ public class HandlerTest {
 
     @Test
     public void testBasicAckAndSidelineWhenTrouperProcessIsFailure() throws IOException {
-        val exceptionInterface = mock(ExceptionInterface.class);
-        val testHandler = getHandlerAfterSettingUp(mainQueueHandlerTag, exceptionInterface);
+        final var exceptionInterface = mock(ExceptionInterface.class);
+        final var testHandler = getHandlerAfterSettingUp(mainQueueHandlerTag, exceptionInterface);
 
         when(exceptionInterface.process()).thenReturn(false);
 
@@ -225,8 +225,8 @@ public class HandlerTest {
 
     @Test
     public void testBasicAckWhenTrouperProcessThrowsKnowException() throws IOException {
-        val exceptionInterface = mock(ExceptionInterface.class);
-        val testHandler = getHandlerAfterSettingUp(mainQueueHandlerTag, exceptionInterface);
+        final var exceptionInterface = mock(ExceptionInterface.class);
+        final var testHandler = getHandlerAfterSettingUp(mainQueueHandlerTag, exceptionInterface);
 
         when(exceptionInterface.process()).thenThrow(new KnowException());
 
@@ -240,11 +240,13 @@ public class HandlerTest {
 
     static class ExceptionTrouper extends Trouper<QueueContext> {
 
-        ExceptionInterface testInterface;
+        private final ExceptionInterface testInterface;
 
-        protected ExceptionTrouper(String queueName, QueueConfiguration config,
-            RabbitConnection connection, Class<? extends QueueContext> clazz,
-            Set<Class<?>> droppedExceptionTypes, ExceptionInterface testInterface) {
+        protected ExceptionTrouper(String queueName,
+                                   QueueConfiguration config,
+                                   RabbitConnection connection, Class<? extends QueueContext> clazz,
+                                   Set<Class<?>> droppedExceptionTypes, ExceptionInterface testInterface
+        ) {
             super(queueName, config, connection, clazz, droppedExceptionTypes);
             this.testInterface = testInterface;
         }

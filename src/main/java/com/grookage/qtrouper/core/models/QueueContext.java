@@ -57,7 +57,7 @@ public class QueueContext implements Serializable{
 
     @JsonIgnore
     public <T> T getContext(String key, Class<T> tClass) {
-        val value = this.data.get(key.toUpperCase());
+        final var value = this.data.get(key.toUpperCase());
         return null == value ? null : SerDe.mapper().convertValue(value, tClass);
     }
 }

@@ -23,7 +23,7 @@ public class QueueConfigurationTest {
 
   @Test
   public void testQueueConfigurationDefaultViaConstructor() {
-      val queueConfiguration = new QueueConfiguration();
+      final var queueConfiguration = new QueueConfiguration();
       Assert.assertFalse(queueConfiguration.isConsumerDisabled());
       Assert.assertEquals(3, queueConfiguration.getConcurrency());
       Assert.assertEquals("qtrouper", queueConfiguration.getNamespace());
@@ -31,7 +31,7 @@ public class QueueConfigurationTest {
 
   @Test
   public void testQueueConfigurationDefaultViaBuilder() {
-      val queueViaBuilder = QueueConfiguration.builder().build();
+      final var queueViaBuilder = QueueConfiguration.builder().build();
       Assert.assertFalse(queueViaBuilder.isConsumerDisabled());
       Assert.assertEquals(3, queueViaBuilder.getConcurrency());
       Assert.assertEquals("qtrouper", queueViaBuilder.getNamespace());
