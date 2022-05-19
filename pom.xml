@@ -24,7 +24,7 @@
         <connection>scm:git:https://github.com/grookage/qtrouper.git</connection>
         <developerConnection>scm:git:https://github.com/grookage/qtrouper.git</developerConnection>
         <tag>HEAD</tag>
-        <url>https://github.com/grookage/easy-fsm.git</url>
+        <url>https://github.com/grookage/qtrouper.git</url>
     </scm>
 
     <developers>
