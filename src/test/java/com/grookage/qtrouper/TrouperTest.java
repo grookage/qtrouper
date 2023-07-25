@@ -171,4 +171,21 @@ public class TrouperTest {
         Assert.assertEquals(20, trouper.getHandlers().size());
         trouper.stop();
     }
+
+    @Test
+    public void priorityQueueConfigTest() throws Exception {
+        val queueConfiguration = QueueConfiguration.builder()
+                .queueName("p-queue")
+                .namespace(DEFAULT_NAMESPACE)
+                .concurrency(10)
+                .priority(5)
+                .prefetchCount(10)
+                .consumerDisabled(false)
+                .retry(getRetryConfiguration())
+                .sideline(getSidelineConfiguration(true, 10))
+                .build();
+        val trouper = getTrouperAfterStart(queueConfiguration);
+        Assert.assertEquals(5, trouper.getConfig().getPriority());
+        trouper.stop();
+    }
 }
