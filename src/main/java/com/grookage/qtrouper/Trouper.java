@@ -162,6 +162,10 @@ public abstract class Trouper<C extends QueueContext> {
         publish(c, new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE).deliveryMode(2).headers(new HashMap<>()).build());
     }
 
+    public final void publish(C c, int priority) {
+        publish(c, new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE).deliveryMode(2).priority(priority).headers(new HashMap<>()).build());
+    }
+
     /**
      * Publish messages which gets expired at given timestamp if expiration is enabled
      *
@@ -178,7 +182,7 @@ public abstract class Trouper<C extends QueueContext> {
     }
 
     @SneakyThrows
-    public void publish(C queueContext, AMQP.BasicProperties properties) {
+    private void publish(C queueContext, AMQP.BasicProperties properties) {
         log.info("Publishing to queue {}: with context {}", queueName, queueContext);
         publishChannel.basicPublish(this.config.getNamespace(), queueName, properties, SerDe.mapper().writeValueAsBytes(queueContext));
         log.info("Published to queue {}: with context {}", queueName, queueContext);
