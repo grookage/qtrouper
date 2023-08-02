@@ -178,7 +178,7 @@ public abstract class Trouper<C extends QueueContext> {
     }
 
     @SneakyThrows
-    private void publish(C queueContext, AMQP.BasicProperties properties) {
+    public void publish(C queueContext, AMQP.BasicProperties properties) {
         log.info("Publishing to queue {}: with context {}", queueName, queueContext);
         publishChannel.basicPublish(this.config.getNamespace(), queueName, properties, SerDe.mapper().writeValueAsBytes(queueContext));
         log.info("Published to queue {}: with context {}", queueName, queueContext);

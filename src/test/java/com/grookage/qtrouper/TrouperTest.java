@@ -174,7 +174,7 @@ public class TrouperTest {
 
     @Test
     public void priorityQueueConfigTest() throws Exception {
-        val queueConfiguration = QueueConfiguration.builder()
+        QueueConfiguration queueConfiguration = QueueConfiguration.builder()
                 .queueName("p-queue")
                 .namespace(DEFAULT_NAMESPACE)
                 .concurrency(10)
@@ -184,8 +184,8 @@ public class TrouperTest {
                 .retry(getRetryConfiguration())
                 .sideline(getSidelineConfiguration(true, 10))
                 .build();
-        val trouper = getTrouperAfterStart(queueConfiguration);
-        Assert.assertEquals(5, trouper.getConfig().getPriority());
-        trouper.stop();
+        TestTrouper trouperAfterStart = getTrouperAfterStart(queueConfiguration);
+        Assert.assertEquals(5, trouperAfterStart.getConfig().getPriority());
+        trouperAfterStart.stop();
     }
 }
