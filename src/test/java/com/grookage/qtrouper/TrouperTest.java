@@ -174,7 +174,7 @@ public class TrouperTest {
 
     @Test
     public void priorityQueueConfigTest() throws Exception {
-        QueueConfiguration queueConfiguration = QueueConfiguration.builder()
+        final var queueConfiguration = QueueConfiguration.builder()
                 .queueName("p-queue")
                 .namespace(DEFAULT_NAMESPACE)
                 .concurrency(10)
@@ -184,7 +184,7 @@ public class TrouperTest {
                 .retry(getRetryConfiguration())
                 .sideline(getSidelineConfiguration(true, 10))
                 .build();
-        TestTrouper trouperAfterStart = getTrouperAfterStart(queueConfiguration);
+        final var trouperAfterStart = getTrouperAfterStart(queueConfiguration);
         Assert.assertEquals(5, trouperAfterStart.getConfig().getPriority());
         trouperAfterStart.stop();
     }
