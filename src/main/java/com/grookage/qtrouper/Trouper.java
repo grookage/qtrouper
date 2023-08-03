@@ -163,10 +163,6 @@ public abstract class Trouper<C extends QueueContext> {
         publish(c, new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE).deliveryMode(2).headers(new HashMap<>()).build());
     }
 
-    public final void publish(C c, int priority) {
-        publish(c, new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE).deliveryMode(2).priority(priority).headers(new HashMap<>()).build());
-    }
-
     /**
      * Publish messages which gets expired at given timestamp if expiration is enabled
      *
@@ -184,6 +180,12 @@ public abstract class Trouper<C extends QueueContext> {
 
     @SneakyThrows
     private void publish(C queueContext, AMQP.BasicProperties properties) {
+        int priority;
+        if (this.config.getPriority() != 0) {
+            Integer priorityOfMessage = queueContext.getContext("priority", Integer.class);
+            priority = priorityOfMessage == null ? 0 : priorityOfMessage;
+            properties.builder().priority(priority);
+        }
         log.info("Publishing to queue {}: with context {}", queueName, queueContext);
         publishChannel.basicPublish(this.config.getNamespace(), queueName, properties, SerDe.mapper().writeValueAsBytes(queueContext));
         log.info("Published to queue {}: with context {}", queueName, queueContext);
@@ -193,9 +195,10 @@ public abstract class Trouper<C extends QueueContext> {
     public void sidelinePublish(C queueContext) {
         log.info("Publishing to {}: {}", getSidelineQueue(), queueContext);
         int priority = 0;
-        if(this.config.getSideline().getPriority() != 0 ){
+        if (this.config.getSideline().getPriority() != 0) {
             //get message priority from queueContext
-            priority = queueContext.getContext("priority", Integer.class);
+            Integer priorityOfMessage = queueContext.getContext("priority", Integer.class);
+            priority = priorityOfMessage == null ? 0 : priorityOfMessage;
         }
         publishChannel.basicPublish(this.config.getNamespace(), getSidelineQueue(), new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE).deliveryMode(2).priority(priority).headers(Map.of()).build(), SerDe.mapper().writeValueAsBytes(queueContext));
         log.info("Published to {}: {}", getSidelineQueue(), queueContext);
@@ -233,7 +236,8 @@ public abstract class Trouper<C extends QueueContext> {
                                              long expiresAt, boolean expiresAtEnabled) {
         int priority = 0;
         if (Objects.nonNull(queueContext.getContext("priority", Integer.class))) {
-            priority = queueContext.getContext("priority", Integer.class);
+            Integer priorityOfMessage = queueContext.getContext("priority", Integer.class);
+            priority = priorityOfMessage == null ? 0 : priorityOfMessage;
         }
       val properties = new AMQP.BasicProperties.Builder()
               .contentType(CONTENT_TYPE)
