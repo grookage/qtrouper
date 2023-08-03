@@ -18,6 +18,9 @@ package com.grookage.qtrouper.core.config;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+
 /**
  * @author koushik
  */
@@ -31,5 +34,9 @@ public class SidelineConfiguration {
     @Builder.Default
     private boolean enabled = true;
     private int concurrency;
+
+    @Min(0)
+    @Max(255)
+    private int priority;
 
 }

@@ -18,6 +18,9 @@ package com.grookage.qtrouper.core.config;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+
 /**
  * @author koushik
  */
@@ -34,4 +37,7 @@ public class RetryConfiguration {
     private long ttlMs;
     private int maxRetries;
     private int backOffFactor; //multiplicationFactor
+    @Min(0)
+    @Max(255)
+    private int priority;
 }

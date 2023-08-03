@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -191,7 +192,12 @@ public abstract class Trouper<C extends QueueContext> {
     @SneakyThrows
     public void sidelinePublish(C queueContext) {
         log.info("Publishing to {}: {}", getSidelineQueue(), queueContext);
-        publishChannel.basicPublish(this.config.getNamespace(), getSidelineQueue(),  new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE).deliveryMode(2).headers(Map.of()).build(), SerDe.mapper().writeValueAsBytes(queueContext));
+        int priority = 0;
+        if(this.config.getSideline().getPriority() != 0 ){
+            //get message priority from queueContext
+            priority = queueContext.getContext("priority", Integer.class);
+        }
+        publishChannel.basicPublish(this.config.getNamespace(), getSidelineQueue(), new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE).deliveryMode(2).priority(priority).headers(Map.of()).build(), SerDe.mapper().writeValueAsBytes(queueContext));
         log.info("Published to {}: {}", getSidelineQueue(), queueContext);
     }
 
@@ -215,6 +221,7 @@ public abstract class Trouper<C extends QueueContext> {
     /**
      * Sets the retryCount, expiration, expiryTimestamp and publishes into the retry queue which would further
      * deadLetter into the mainQueue.
+     * Get priority from QueueContext, zero if not mentioned in queueContext
      *
      * @param queueContext {@link C}     The c that is associated with the Trouper
      * @param retryCount {@link Integer}     The currentRetryCount of the c
@@ -224,10 +231,15 @@ public abstract class Trouper<C extends QueueContext> {
      */
     public final void retryPublishWithExpiry(C queueContext, int retryCount, long expiration,
                                              long expiresAt, boolean expiresAtEnabled) {
+        int priority = 0;
+        if (Objects.nonNull(queueContext.getContext("priority", Integer.class))) {
+            priority = queueContext.getContext("priority", Integer.class);
+        }
       val properties = new AMQP.BasicProperties.Builder()
               .contentType(CONTENT_TYPE)
               .expiration(String.valueOf(expiration))
               .deliveryMode(2)
+              .priority(priority)
               .headers(Map.of(RETRY_COUNT, retryCount, EXPIRATION, expiration, EXPIRES_AT_ENABLED, expiresAtEnabled, EXPIRES_AT_TIMESTAMP, expiresAt))
               .build();
       retryPublish(queueContext, properties);
@@ -283,13 +295,11 @@ public abstract class Trouper<C extends QueueContext> {
         ensureExchange(exchange);
         ensureExchange(dlExchange);
         this.publishChannel = connection.newChannel();
-        Map<String, Object> arguments = new HashMap<>(connection.rmqOpts());
-        if (this.config.getPriority() != 0) {
-            arguments.put(PRIORITY, this.config.getPriority());
-        }
-        connection.ensure(queueName, this.config.getNamespace(), arguments);
-        connection.ensure(getRetryQueue(), dlExchange, connection.rmqOpts(exchange, queueName));
-        connection.ensure(getSidelineQueue(), this.config.getNamespace(), connection.rmqOpts());
+
+        ensureMainQueue(queueName, this.config.getNamespace());
+        ensureRetryQueue(getRetryQueue(), queueName, dlExchange);
+        ensureSidelineQueue(getSidelineQueue(), this.config.getNamespace());
+
         if (config.isConsumerEnabled()) {
             IntStream.rangeClosed(1, config.getConcurrency()).forEach(i -> addHandler(i, false));
             final var sidelineConfiguration = config.getSideline();
@@ -297,6 +307,30 @@ public abstract class Trouper<C extends QueueContext> {
                 IntStream.rangeClosed(1, sidelineConfiguration.getConcurrency()).forEach(i -> addHandler(i, true));
             }
         }
+    }
+
+    private void ensureSidelineQueue(String sidelineQueue, String namespace) {
+        Map<String, Object> arguments = new HashMap<>(connection.rmqOpts());
+        if (Objects.nonNull(this.config.getSideline()) && this.config.getSideline().getPriority() != 0) {
+            arguments.put(PRIORITY, this.config.getSideline().getPriority());
+        }
+        connection.ensure(sidelineQueue, this.config.getNamespace(), arguments);
+    }
+
+    private void ensureRetryQueue(String retryQueue, String queueName, String dlExchange) {
+        Map<String, Object> arguments = new HashMap<>(connection.rmqOpts(dlExchange, queueName));
+        if (Objects.nonNull(this.config.getRetry()) && this.config.getRetry().getPriority() != 0) {
+            arguments.put(PRIORITY, this.config.getRetry().getPriority());
+        }
+        connection.ensure(retryQueue, this.config.getNamespace(), arguments);
+    }
+
+    private void ensureMainQueue(String mainQueue, String namespace) {
+        Map<String, Object> arguments = new HashMap<>(connection.rmqOpts());
+        if (this.config.getPriority() != 0) {
+            arguments.put(PRIORITY, this.config.getPriority());
+        }
+        connection.ensure(mainQueue, this.config.getNamespace(), arguments);
     }
 
     public void stop() {
