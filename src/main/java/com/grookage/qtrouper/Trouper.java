@@ -326,7 +326,7 @@ public abstract class Trouper<C extends QueueContext> {
         if (Objects.nonNull(this.config.getRetry()) && this.config.getRetry().getPriority() != 0) {
             arguments.put(PRIORITY, this.config.getRetry().getPriority());
         }
-        connection.ensure(retryQueue, this.config.getNamespace(), arguments);
+        connection.ensure(retryQueue, dlExchange, arguments);
     }
 
     private void ensureMainQueue(String mainQueue, String namespace) {
