@@ -301,7 +301,7 @@ public abstract class Trouper<C extends QueueContext> {
         this.publishChannel = connection.newChannel();
 
         ensureMainQueue(queueName, this.config.getNamespace());
-        ensureRetryQueue(getRetryQueue(), queueName, dlExchange);
+        ensureRetryQueue(getRetryQueue(), queueName, dlExchange, exchange);
         ensureSidelineQueue(getSidelineQueue(), this.config.getNamespace());
 
         if (config.isConsumerEnabled()) {
@@ -321,8 +321,8 @@ public abstract class Trouper<C extends QueueContext> {
         connection.ensure(sidelineQueue, this.config.getNamespace(), arguments);
     }
 
-    private void ensureRetryQueue(String retryQueue, String queueName, String dlExchange) {
-        Map<String, Object> arguments = new HashMap<>(connection.rmqOpts(dlExchange, queueName));
+    private void ensureRetryQueue(String retryQueue, String queueName, String dlExchange, String exchange) {
+        Map<String, Object> arguments = new HashMap<>(connection.rmqOpts(exchange, queueName));
         if (Objects.nonNull(this.config.getRetry()) && this.config.getRetry().getPriority() != 0) {
             arguments.put(PRIORITY, this.config.getRetry().getPriority());
         }
