@@ -365,7 +365,6 @@ public abstract class Trouper<C extends QueueContext> {
                         Trouper<C> trouper,
                         boolean sideline) throws IOException {
             super(channel);
-
             this.clazz = clazz;
             this.trouper = trouper;
             this.sideline = sideline;
