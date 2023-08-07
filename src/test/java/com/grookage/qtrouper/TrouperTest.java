@@ -16,6 +16,15 @@
 package com.grookage.qtrouper;
 
 
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grookage.qtrouper.core.config.QueueConfiguration;
 import com.grookage.qtrouper.core.config.RetryConfiguration;
 import com.grookage.qtrouper.core.config.SidelineConfiguration;
@@ -23,19 +32,16 @@ import com.grookage.qtrouper.core.models.QAccessInfo;
 import com.grookage.qtrouper.core.models.QueueContext;
 import com.grookage.qtrouper.core.rabbit.RabbitConfiguration;
 import com.grookage.qtrouper.core.rabbit.RabbitConnection;
+import com.grookage.qtrouper.utils.SerDe;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
-import lombok.val;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import static org.mockito.Mockito.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @author koushik
@@ -43,31 +49,12 @@ import static org.mockito.Mockito.*;
 @SuppressWarnings({"unchecked", "unused"})
 public class TrouperTest {
 
-    static class TestTrouper extends Trouper<QueueContext>{
-
-        protected TestTrouper(String queueName, QueueConfiguration config, RabbitConnection connection, Class<? extends QueueContext> clazz, Set<Class<?>> droppedExceptionTypes) {
-            super(queueName, config, connection, clazz, droppedExceptionTypes);
-        }
-
-        @Override
-        public boolean process(QueueContext queueContext, QAccessInfo accessInfo) {
-            return true;
-        }
-
-        @Override
-        public boolean processSideline(QueueContext queueContext, QAccessInfo accessInfo) {
-            return true;
-        }
-    }
-
+    private static final String DEFAULT_NAMESPACE = "default";
     private final Connection connection = mock(Connection.class);
     private final Channel channel = mock(Channel.class);
-
-    private static final String DEFAULT_NAMESPACE = "default";
-
     private RabbitConnection rabbitConnection;
 
-    private RetryConfiguration getRetryConfiguration(){
+    private RetryConfiguration getRetryConfiguration() {
         return RetryConfiguration.builder()
                 .enabled(false)
                 .maxRetries(10)
@@ -75,7 +62,8 @@ public class TrouperTest {
                 .build();
     }
 
-    private SidelineConfiguration getSidelineConfiguration(boolean enabled, int concurrency){
+    private SidelineConfiguration getSidelineConfiguration(boolean enabled,
+                                                           int concurrency) {
         return SidelineConfiguration.builder()
                 .enabled(enabled)
                 .concurrency(concurrency)
@@ -101,12 +89,10 @@ public class TrouperTest {
         when(rabbitConnection.newChannel()).thenReturn(channel);
         when(rabbitConnection.getConnection()).thenReturn(connection);
         when(rabbitConnection.channel()).thenReturn(channel);
-        final var testTrouper = new TestTrouper(queueConfiguration.getQueueName(), queueConfiguration,
-                rabbitConnection, QueueContext.class, new HashSet<>());
+        final var testTrouper = new TestTrouper(queueConfiguration.getQueueName(), queueConfiguration, rabbitConnection,
+                QueueContext.class, new HashSet<>());
         testTrouper.start();
-        verify(channel, times(2)).exchangeDeclare(
-                anyString(), anyString(), anyBoolean(), anyBoolean(), any()
-        );
+        verify(channel, times(2)).exchangeDeclare(anyString(), anyString(), anyBoolean(), anyBoolean(), any());
         verify(rabbitConnection, times(3)).ensure(anyString(), anyString(), any(Map.class));
         return testTrouper;
     }
@@ -152,7 +138,8 @@ public class TrouperTest {
                 .build();
         when(channel.basicConsume(anyString(), anyBoolean(), any())).thenReturn("tag");
         final var trouper = getTrouperAfterStart(queueConfiguration);
-        Assert.assertEquals(1, trouper.getHandlers().size());
+        Assert.assertEquals(1, trouper.getHandlers()
+                .size());
         trouper.stop();
     }
 
@@ -168,7 +155,31 @@ public class TrouperTest {
                 .sideline(getSidelineConfiguration(true, 10))
                 .build();
         final var trouper = getTrouperAfterStart(queueConfiguration);
-        Assert.assertEquals(20, trouper.getHandlers().size());
+        Assert.assertEquals(20, trouper.getHandlers()
+                .size());
         trouper.stop();
+    }
+
+    static class TestTrouper extends Trouper<QueueContext> {
+
+        protected TestTrouper(String queueName,
+                              QueueConfiguration config,
+                              RabbitConnection connection,
+                              Class<? extends QueueContext> clazz,
+                              Set<Class<?>> droppedExceptionTypes) {
+            super(queueName, config, connection, clazz, droppedExceptionTypes);
+        }
+
+        @Override
+        public boolean process(QueueContext queueContext,
+                               QAccessInfo accessInfo) {
+            return true;
+        }
+
+        @Override
+        public boolean processSideline(QueueContext queueContext,
+                                       QAccessInfo accessInfo) {
+            return true;
+        }
     }
 }

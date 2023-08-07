@@ -17,18 +17,17 @@ package com.grookage.qtrouper.core.healthchecks;
 
 import com.codahale.metrics.health.HealthCheck;
 import com.grookage.qtrouper.core.rabbit.RabbitConnection;
-import lombok.AllArgsConstructor;
-import lombok.val;
-
-import javax.inject.Singleton;
 import java.io.IOException;
+import javax.inject.Singleton;
+import lombok.AllArgsConstructor;
 
 /**
  * @author koushik
  */
 @Singleton
 @AllArgsConstructor
-public class TrouperHealthCheck extends HealthCheck{
+public class TrouperHealthCheck extends HealthCheck {
+
     private final RabbitConnection rabbitConnection;
 
     @Override

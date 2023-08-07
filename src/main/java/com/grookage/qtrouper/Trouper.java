@@ -15,7 +15,6 @@
  */
 package com.grookage.qtrouper;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.grookage.qtrouper.core.config.QueueConfiguration;
 import com.grookage.qtrouper.core.models.QAccessInfo;
@@ -26,16 +25,20 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ClassUtils;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.SneakyThrows;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ClassUtils;
 
 /**
  * @author koushik
@@ -51,6 +54,8 @@ public abstract class Trouper<C extends QueueContext> {
     private static final String EXPIRATION = "x-message-ttl";
     private static final String EXPIRES_AT_TIMESTAMP = "x-expires-timestamp";
     private static final String EXPIRES_AT_ENABLED = "x-expires-enabled";
+    private static final String MESSAGE_PRIORITY = "x-message-priority";
+    private static final String RETRIED = "x-message-retried";
     private static final String CONTENT_TYPE = "text/plain";
 
     private final QueueConfiguration config;
@@ -62,12 +67,11 @@ public abstract class Trouper<C extends QueueContext> {
     private Channel publishChannel;
     private List<Handler> handlers = Lists.newArrayList();
 
-    protected Trouper(
-            String queueName,
-            QueueConfiguration config,
-            RabbitConnection connection,
-            Class<? extends C> clazz,
-            Set<Class<?>> droppedExceptionTypes) {
+    protected Trouper(String queueName,
+                      QueueConfiguration config,
+                      RabbitConnection connection,
+                      Class<? extends C> clazz,
+                      Set<Class<?>> droppedExceptionTypes) {
         this.config = config;
         this.connection = connection;
         this.clazz = clazz;
@@ -77,16 +81,19 @@ public abstract class Trouper<C extends QueueContext> {
     }
 
 
-    public abstract boolean process(C queueContext, QAccessInfo accessInfo);
+    public abstract boolean process(C queueContext,
+                                    QAccessInfo accessInfo);
 
-    public abstract boolean processSideline(C queueContext, QAccessInfo accessInfo);
+    public abstract boolean processSideline(C queueContext,
+                                            QAccessInfo accessInfo);
 
     /*
      * Determines if a message is expired. Checks if message expiry is enabled and current time is more than expiry time.
      * @param expiresAtEnabled  {@link Boolean}         Whether message expiry is enabled or not
      * @param expiresAt         {@link Long}            The time at which the messsage is set to expire
      */
-    private boolean isMessageExpired(boolean expiresAtEnabled, long expiresAt){
+    private boolean isMessageExpired(boolean expiresAtEnabled,
+                                     long expiresAt) {
         return expiresAtEnabled && expiresAt != 0 && expiresAt < System.currentTimeMillis();
     }
 
@@ -105,41 +112,55 @@ public abstract class Trouper<C extends QueueContext> {
      * @return  if the handle is successful or otherwise.
      */
     @SneakyThrows
-    private boolean handle(C queueContext, AMQP.BasicProperties properties) {
-        final var expiresAtEnabled = (Boolean) properties.getHeaders().getOrDefault(EXPIRES_AT_ENABLED, false);
-        final var expiresAt = (Long) properties.getHeaders().getOrDefault(EXPIRES_AT_TIMESTAMP, 0L);
+    private boolean handle(C queueContext,
+                           AMQP.BasicProperties properties) {
+        final var expiresAtEnabled = (boolean) properties.getHeaders()
+                .getOrDefault(EXPIRES_AT_ENABLED, false);
+        final var expiresAt = (long) properties.getHeaders()
+                .getOrDefault(EXPIRES_AT_TIMESTAMP, 0L);
+        final var retried = (boolean) properties.getHeaders()
+                .getOrDefault(RETRIED, false);
 
-        if (isMessageExpired(expiresAtEnabled, expiresAt)){
+        if (isMessageExpired(expiresAtEnabled, expiresAt)) {
             log.info("Ignoring queueContext due to expiry {}", queueContext);
             return true;
         }
 
         try {
-            val processed = process(queueContext, getAccessInformation(properties));
-            if(processed) return true;
+            final var processed = process(queueContext, getAccessInformation(properties));
+            if (processed) {
+                return true;
+            }
         } catch (Exception ex) {
             log.error("Exception while processing the queueContext {}", queueContext, ex);
         }
 
         final var retry = config.getRetry();
         if (retry.isEnabled()) {
-            var retryCount = (int) properties.getHeaders().getOrDefault(RETRY_COUNT, 0);
+            var retryCount = (int) properties.getHeaders()
+                    .getOrDefault(RETRY_COUNT, 0);
             if (retryCount >= retry.getMaxRetries()) {
                 sidelinePublish(queueContext);
                 return true;
             }
             retryCount++;
-            final var expiration = (long) properties.getHeaders().getOrDefault(EXPIRATION, retry.getTtlMs());
+            final var expiration = (long) properties.getHeaders()
+                    .getOrDefault(EXPIRATION, retry.getTtlMs());
             final var newExpiration = expiration * retry.getBackOffFactor();
+            if(retried){
+                queueContext.setMessagePriority((int) properties.getHeaders()
+                        .getOrDefault(MESSAGE_PRIORITY, 0));
+            }
             retryPublishWithExpiry(queueContext, retryCount, newExpiration, expiresAt, expiresAtEnabled);
-        }else{
+        } else {
             sidelinePublish(queueContext);
         }
         return true;
     }
 
     private QAccessInfo getAccessInformation(AMQP.BasicProperties properties) {
-        final var retryCount = (int) properties.getHeaders().getOrDefault(RETRY_COUNT, 0);
+        final var retryCount = (int) properties.getHeaders()
+                .getOrDefault(RETRY_COUNT, 0);
         return QAccessInfo.builder()
                 .retryCount(retryCount)
                 .idempotencyCheckRequired(retryCount > 0)
@@ -159,51 +180,72 @@ public abstract class Trouper<C extends QueueContext> {
     }
 
     public final void publish(C c) {
-        publish(c, new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE).deliveryMode(2).headers(new HashMap<>()).build());
+        publish(c, new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE)
+                .deliveryMode(2)
+                .priority(c.getMessagePriority())
+                .headers(Map.of(MESSAGE_PRIORITY, c.getMessagePriority()))
+                .build());
     }
 
     /**
      * Publish messages which gets expired at given timestamp if expiration is enabled
      *
-     * @param queueContext           {@link C}             The queueContext which gets published
-     * @param expiresAt         {@link Long}                The timestamp at which a queueContext gets expired if expiration is enabled
-     * @param expiresAtEnabled  {@link Boolean}             A flag to determine if queueContext expiration is enabled or not
+     * @param queueContext {@link C}             The queueContext which gets published
+     * @param expiresAt {@link Long}                The timestamp at which a queueContext gets expired if expiration is
+     * enabled
+     * @param expiresAtEnabled {@link Boolean}             A flag to determine if queueContext expiration is enabled or
+     * not
      */
-    public final void publishWithExpiry(C queueContext, long expiresAt, boolean expiresAtEnabled) {
-      publish(queueContext, Map.of(EXPIRES_AT_TIMESTAMP, expiresAt, EXPIRES_AT_ENABLED, expiresAtEnabled));
-    }
-
-    public final void publish(C queueContext, Map<String, Object> headers) {
-        publish(queueContext, new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE).deliveryMode(2).headers(headers).build());
+    public final void publishWithExpiry(C queueContext,
+                                        long expiresAt,
+                                        boolean expiresAtEnabled) {
+        final var properties = new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE)
+                .priority(queueContext.getMessagePriority())
+                .deliveryMode(2)
+                .headers(Map.of(EXPIRES_AT_TIMESTAMP, expiresAt, EXPIRES_AT_ENABLED, expiresAtEnabled, MESSAGE_PRIORITY,
+                        queueContext.getMessagePriority()))
+                .build();
+        publish(queueContext, properties);
     }
 
     @SneakyThrows
-    private void publish(C queueContext, AMQP.BasicProperties properties) {
+    private void publish(C queueContext,
+                         AMQP.BasicProperties properties) {
         log.info("Publishing to queue {}: with context {}", queueName, queueContext);
-        publishChannel.basicPublish(this.config.getNamespace(), queueName, properties, SerDe.mapper().writeValueAsBytes(queueContext));
+        publishChannel.basicPublish(this.config.getNamespace(), queueName, properties, SerDe.mapper()
+                .writeValueAsBytes(queueContext));
         log.info("Published to queue {}: with context {}", queueName, queueContext);
     }
 
     @SneakyThrows
     public void sidelinePublish(C queueContext) {
         log.info("Publishing to {}: {}", getSidelineQueue(), queueContext);
-        publishChannel.basicPublish(this.config.getNamespace(), getSidelineQueue(),  new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE).deliveryMode(2).headers(Map.of()).build(), SerDe.mapper().writeValueAsBytes(queueContext));
+        publishChannel.basicPublish(this.config.getNamespace(), getSidelineQueue(),
+                new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE)
+                        .deliveryMode(2)
+                        .priority(queueContext.getMessagePriority())
+                        .headers(Map.of())
+                        .build(), SerDe.mapper()
+                        .writeValueAsBytes(queueContext));
         log.info("Published to {}: {}", getSidelineQueue(), queueContext);
     }
 
     /**
      * Sets the retryCount and expiration and publishes into the retry queue
      * which would further deadLetter into the mainQueue.
-     * @param queueContext           {@link C}     The queueContext that is associated with the Trouper
-     * @param retryCount        {@link Integer}     The currentRetryCount of the queueContext
-     * @param expiration        {@link Long}        The current expiration in milliseconds
+     *
+     * @param queueContext {@link C}     The queueContext that is associated with the Trouper
+     * @param retryCount {@link Integer}     The currentRetryCount of the queueContext
+     * @param expiration {@link Long}        The current expiration in milliseconds
      */
-    public final void retryPublish(C queueContext, int retryCount, long expiration){
-        final var properties = new AMQP.BasicProperties.Builder()
-                .contentType(CONTENT_TYPE)
+    public final void retryPublish(C queueContext,
+                                   int retryCount,
+                                   long expiration) {
+        final var properties = new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE)
                 .expiration(String.valueOf(expiration))
                 .deliveryMode(2)
-                .headers(Map.of(RETRY_COUNT, retryCount, EXPIRATION, expiration))
+                .headers(Map.of(RETRY_COUNT, retryCount, EXPIRATION, expiration, MESSAGE_PRIORITY,
+                        queueContext.getMessagePriority(), RETRIED, true))
                 .build();
         retryPublish(queueContext, properties);
     }
@@ -218,47 +260,44 @@ public abstract class Trouper<C extends QueueContext> {
      * @param expiresAt {@link Long}        The timestamp at which the c should expire
      * @param expiresAtEnabled {@link Boolean}     Flag to determine whether the c should expire at expiresAt timestamp
      */
-    public final void retryPublishWithExpiry(C queueContext, int retryCount, long expiration,
-                                             long expiresAt, boolean expiresAtEnabled) {
-      val properties = new AMQP.BasicProperties.Builder()
-              .contentType(CONTENT_TYPE)
-              .expiration(String.valueOf(expiration))
-              .deliveryMode(2)
-              .headers(Map.of(RETRY_COUNT, retryCount, EXPIRATION, expiration, EXPIRES_AT_ENABLED, expiresAtEnabled, EXPIRES_AT_TIMESTAMP, expiresAt))
-              .build();
-      retryPublish(queueContext, properties);
+    public final void retryPublishWithExpiry(C queueContext,
+                                             int retryCount,
+                                             long expiration,
+                                             long expiresAt,
+                                             boolean expiresAtEnabled) {
+        final var properties = new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE)
+                .expiration(String.valueOf(expiration))
+                .deliveryMode(2)
+                .headers(Map.of(RETRY_COUNT, retryCount, EXPIRATION, expiration, EXPIRES_AT_ENABLED, expiresAtEnabled,
+                        EXPIRES_AT_TIMESTAMP, expiresAt, MESSAGE_PRIORITY, queueContext.getMessagePriority(), RETRIED, true))
+                .build();
+        retryPublish(queueContext, properties);
     }
 
     @SneakyThrows
-    private void retryPublish(C queueContext, AMQP.BasicProperties properties) {
-      log.info("Publishing to {}: {}", getRetryQueue(), queueContext);
-      connection.getChannel().basicPublish(
-          getRetryExchange(),
-          getRetryQueue(),
-          properties, SerDe.mapper().writeValueAsBytes(queueContext)
-      );
-      log.info("Published to {}: {}", getRetryQueue(), queueContext);
+    private void retryPublish(C queueContext,
+                              AMQP.BasicProperties properties) {
+        log.info("Publishing to {}: {}", getRetryQueue(), queueContext);
+        connection.getChannel()
+                .basicPublish(getRetryExchange(), getRetryQueue(), properties, SerDe.mapper()
+                        .writeValueAsBytes(queueContext));
+        log.info("Published to {}: {}", getRetryQueue(), queueContext);
     }
 
     @SneakyThrows
     private void ensureExchange(String exchange) {
-        connection.channel().exchangeDeclare(
-                exchange,
-                "direct",
-                true,
-                false,
-                ImmutableMap.<String, Object>builder()
-                        .put("x-ha-policy", "all")
-                        .put("ha-mode", "all")
-                        .build());
+        connection.channel()
+                .exchangeDeclare(exchange, "direct", true, false, Map.of("x-ha-policy", "all", "ha-mode", "all"));
     }
 
     @SneakyThrows
-    private void addHandler(int consumerNumber, boolean sideline) {
+    private void addHandler(int consumerNumber,
+                            boolean sideline) {
         final var consumeChannel = connection.newChannel();
-        final var handler = new Handler(consumeChannel,
-                clazz, prefetchCount, this, sideline);
-        final var tag = consumeChannel.basicConsume(sideline ? getSidelineQueue() : queueName, false, handler);
+        final var handler = new Handler(consumeChannel, clazz, prefetchCount, this, sideline);
+        final var tag = consumeChannel.basicConsume(sideline
+                                                    ? getSidelineQueue()
+                                                    : queueName, false, handler);
         handler.setTag(tag);
         handlers.add(handler);
         log.info("Started  consumer {} with queueName {}", consumerNumber, queueName);
@@ -279,14 +318,16 @@ public abstract class Trouper<C extends QueueContext> {
         ensureExchange(exchange);
         ensureExchange(dlExchange);
         this.publishChannel = connection.newChannel();
-        connection.ensure(queueName, this.config.getNamespace(), connection.rmqOpts());
+        connection.ensure(queueName, this.config.getNamespace(), connection.rmqOpts(this.config.getMaxPriority()));
         connection.ensure(getRetryQueue(), dlExchange, connection.rmqOpts(exchange, queueName));
         connection.ensure(getSidelineQueue(), this.config.getNamespace(), connection.rmqOpts());
         if (config.isConsumerEnabled()) {
-            IntStream.rangeClosed(1, config.getConcurrency()).forEach(i -> addHandler(i, false));
+            IntStream.rangeClosed(1, config.getConcurrency())
+                    .forEach(i -> addHandler(i, false));
             final var sidelineConfiguration = config.getSideline();
             if (sidelineConfiguration.isEnabled()) {
-                IntStream.rangeClosed(1, sidelineConfiguration.getConcurrency()).forEach(i -> addHandler(i, true));
+                IntStream.rangeClosed(1, sidelineConfiguration.getConcurrency())
+                        .forEach(i -> addHandler(i, true));
             }
         }
     }
@@ -332,24 +373,29 @@ public abstract class Trouper<C extends QueueContext> {
         }
 
         private boolean isExceptionIgnorable(Throwable t) {
-            return droppedExceptionTypes
-                    .stream()
+            return droppedExceptionTypes.stream()
                     .anyMatch(exceptionType -> ClassUtils.isAssignable(t.getClass(), exceptionType));
         }
 
         /**
-         * Need to augment the properties with checks and balances for people might push into the queue async, w/o any header
+         * Need to augment the properties with checks and balances for people might push into the queue async, w/o any
+         * header
          * information. Want trouper to gracefully handle such a scenario.
          *
-         * @param basicProperties           {@link AMQP.BasicProperties}    The properties object sent during the push.
+         * @param basicProperties {@link AMQP.BasicProperties}    The properties object sent during the push.
          */
-        private AMQP.BasicProperties getProperties(AMQP.BasicProperties basicProperties){
-            if(null == basicProperties){
-                return new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE).deliveryMode(2).headers(new HashMap<>()).build();
+        private AMQP.BasicProperties getProperties(AMQP.BasicProperties basicProperties) {
+            if (null == basicProperties) {
+                return new AMQP.BasicProperties.Builder().contentType(CONTENT_TYPE)
+                        .deliveryMode(2)
+                        .headers(new HashMap<>())
+                        .build();
             }
 
-            if(null == basicProperties.getHeaders()){
-                return basicProperties.builder().headers(new HashMap<>()).build();
+            if (null == basicProperties.getHeaders()) {
+                return basicProperties.builder()
+                        .headers(new HashMap<>())
+                        .build();
             }
 
             return basicProperties;
@@ -364,21 +410,24 @@ public abstract class Trouper<C extends QueueContext> {
          *
          * In case of any exceptions, checks if any of the exceptions are whitelisted, and repeats the above.
          *
-         * @param consumerTag       {@link String}              The consumerTag associated with the message
-         * @param envelope          {@link Envelope}            RabbitMQ Envelope object
-         * @param properties        {@link AMQP.BasicProperties}AMQP BasicProperties associated with the message
-         * @param body              {@link Byte[]}              ByteArray representing the message
+         * @param consumerTag {@link String}              The consumerTag associated with the message
+         * @param envelope {@link Envelope}            RabbitMQ Envelope object
+         * @param properties {@link AMQP.BasicProperties}AMQP BasicProperties associated with the message
+         * @param body {@link Byte[]}              ByteArray representing the message
          */
         @Override
         @SneakyThrows
-        public void handleDelivery(String consumerTag, Envelope envelope,
-                                   AMQP.BasicProperties properties, byte[] body) {
+        public void handleDelivery(String consumerTag,
+                                   Envelope envelope,
+                                   AMQP.BasicProperties properties,
+                                   byte[] body) {
             try {
-                final var queueContext = SerDe.mapper().readValue(body, clazz);
+                final var queueContext = SerDe.mapper()
+                        .readValue(body, clazz);
                 final var propertyDetails = getProperties(properties);
-                final var success = sideline ?
-                        trouper.processSideline(queueContext, getAccessInformation(propertyDetails)) :
-                        trouper.handle(queueContext, propertyDetails);
+                final var success = sideline
+                                    ? trouper.processSideline(queueContext, getAccessInformation(propertyDetails))
+                                    : trouper.handle(queueContext, propertyDetails);
 
                 if (success) {
                     getChannel().basicAck(envelope.getDeliveryTag(), false);
@@ -386,7 +435,8 @@ public abstract class Trouper<C extends QueueContext> {
                     getChannel().basicReject(envelope.getDeliveryTag(), true);
                 }
             } catch (Throwable t) {
-                log.error("Error processing message with tag {}, routing key {} and throwable {}", envelope.getDeliveryTag(), envelope.getRoutingKey(), t);
+                log.error("Error processing message with tag {}, routing key {} and throwable {}",
+                        envelope.getDeliveryTag(), envelope.getRoutingKey(), t);
                 if (isExceptionIgnorable(t)) {
                     log.warn("Acked message due to exception: ", t);
                     getChannel().basicAck(envelope.getDeliveryTag(), false);

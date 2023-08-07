@@ -15,6 +15,14 @@
  */
 package com.grookage.qtrouper.core.config;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import com.grookage.qtrouper.Trouper;
@@ -27,28 +35,23 @@ import com.grookage.qtrouper.utils.SerDe;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Envelope;
-import lombok.val;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Set;
-
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 @SuppressWarnings("unchecked")
 public class HandlerTest {
 
-    private Channel channel;
-    private RabbitConnection rabbitConnection;
     private final String mainQueueHandlerTag = "MAIN_QUEUE_HANDLER_TAG";
     private final String sidelineQueueHandlerTag = "SIDELINE_QUEUE_HANDLER_TAG";
     private final Long deliveryTag = 73656L;
+    private Channel channel;
+    private RabbitConnection rabbitConnection;
     private Envelope envelope;
     private ArgumentCaptor<Long> deliveryTagCaptor;
     private ArgumentCaptor<Boolean> boolCaptor;
@@ -69,12 +72,12 @@ public class HandlerTest {
     private void setupBaseMocks() {
         final var rmqOpts = mock(Map.class);
         final var rabbitConfiguration = RabbitConfiguration.builder()
-            .brokers(new ArrayList<>())
-            .password("")
-            .userName("")
-            .virtualHost("/")
-            .threadPoolSize(100)
-            .build();
+                .brokers(new ArrayList<>())
+                .password("")
+                .userName("")
+                .virtualHost("/")
+                .threadPoolSize(100)
+                .build();
 
         when(rabbitConnection.getConfig()).thenReturn(rabbitConfiguration);
         when(rabbitConnection.rmqOpts()).thenReturn(rmqOpts);
@@ -84,35 +87,40 @@ public class HandlerTest {
         when(envelope.getDeliveryTag()).thenReturn(deliveryTag);
     }
 
-    private Handler getHandlerAfterSettingUp(String queueTag,
-                                             ExceptionInterface testInterface) throws IOException {
+    private Handler getHandler(String queueTag,
+                               ExceptionInterface testInterface, boolean retryEnabled, int maxRetries) throws IOException {
         final var queueConfiguration = QueueConfiguration.builder()
-            .retry(RetryConfiguration.builder()
-                .enabled(false)
-                .build())
-            .sideline(SidelineConfiguration.builder()
-                .enabled(true)
+                .retry(RetryConfiguration.builder()
+                        .enabled(retryEnabled)
+                        .maxRetries(maxRetries)
+                        .build())
+                .sideline(SidelineConfiguration.builder()
+                        .enabled(true)
+                        .concurrency(1)
+                        .build())
+                .queueName("TEST_QUEUE_1")
                 .concurrency(1)
-                .build())
-            .queueName("TEST_QUEUE_1")
-            .concurrency(1)
-            .build();
-        when(channel.basicConsume(anyString(), anyBoolean(), any()))
-            .thenReturn(mainQueueHandlerTag)
-            .thenReturn(sidelineQueueHandlerTag);
+                .build();
+        when(channel.basicConsume(anyString(), anyBoolean(), any())).thenReturn(mainQueueHandlerTag)
+                .thenReturn(sidelineQueueHandlerTag);
 
         // Create a trouper
-        final var testTrouper = new ExceptionTrouper(queueConfiguration.getQueueName(),
-            queueConfiguration, rabbitConnection, QueueContext.class,
-            Sets.newHashSet(KnowException.class), testInterface);
+        final var testTrouper = new ExceptionTrouper(queueConfiguration.getQueueName(), queueConfiguration,
+                rabbitConnection, QueueContext.class, Sets.newHashSet(KnowException.class), testInterface);
         testTrouper.start();
 
         // Get the handler
-        return testTrouper.getHandlers().stream()
-            .filter(handler -> handler.getTag().equalsIgnoreCase(queueTag))
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException("Can't find handler"));
+        return testTrouper.getHandlers()
+                .stream()
+                .filter(handler -> handler.getTag()
+                        .equalsIgnoreCase(queueTag))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Can't find handler"));
+    }
 
+    private Handler getHandlerAfterSettingUp(String queueTag,
+                                             ExceptionInterface testInterface) throws IOException {
+       return getHandler(queueTag, testInterface, false, 0);
     }
 
     @Test
@@ -123,8 +131,9 @@ public class HandlerTest {
 
         when(exceptionInterface.process()).thenThrow(new RuntimeException("test exp"));
 
-        testHandler.handleDelivery("ANY", envelope, null,
-            SerDe.mapper().writeValueAsBytes(QueueContext.builder().build()));
+        testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
+                .writeValueAsBytes(QueueContext.builder()
+                        .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
         Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
@@ -139,8 +148,9 @@ public class HandlerTest {
 
         when(exceptionInterface.processSideline()).thenReturn(true);
 
-        testHandler.handleDelivery("ANY", envelope, null,
-            SerDe.mapper().writeValueAsBytes(QueueContext.builder().build()));
+        testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
+                .writeValueAsBytes(QueueContext.builder()
+                        .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
         Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
@@ -154,8 +164,9 @@ public class HandlerTest {
 
         when(exceptionInterface.processSideline()).thenReturn(false);
 
-        testHandler.handleDelivery("ANY", envelope, null,
-            SerDe.mapper().writeValueAsBytes(QueueContext.builder().build()));
+        testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
+                .writeValueAsBytes(QueueContext.builder()
+                        .build()));
 
         verify(channel).basicReject(deliveryTagCaptor.capture(), boolCaptor.capture());
         Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
@@ -169,8 +180,9 @@ public class HandlerTest {
 
         when(exceptionInterface.processSideline()).thenThrow(new KnowException());
 
-        testHandler.handleDelivery("ANY", envelope, null,
-            SerDe.mapper().writeValueAsBytes(QueueContext.builder().build()));
+        testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
+                .writeValueAsBytes(QueueContext.builder()
+                        .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
         Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
@@ -184,8 +196,9 @@ public class HandlerTest {
 
         when(exceptionInterface.processSideline()).thenThrow(new RuntimeException());
 
-        testHandler.handleDelivery("ANY", envelope, null,
-            SerDe.mapper().writeValueAsBytes(QueueContext.builder().build()));
+        testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
+                .writeValueAsBytes(QueueContext.builder()
+                        .build()));
 
         verify(channel).basicReject(deliveryTagCaptor.capture(), boolCaptor.capture());
         Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
@@ -199,8 +212,9 @@ public class HandlerTest {
 
         when(exceptionInterface.process()).thenReturn(true);
 
-        testHandler.handleDelivery("ANY", envelope, null,
-            SerDe.mapper().writeValueAsBytes(QueueContext.builder().build()));
+        testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
+                .writeValueAsBytes(QueueContext.builder()
+                        .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
         Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
@@ -214,8 +228,9 @@ public class HandlerTest {
 
         when(exceptionInterface.process()).thenReturn(false);
 
-        testHandler.handleDelivery("ANY", envelope, null,
-            SerDe.mapper().writeValueAsBytes(QueueContext.builder().build()));
+        testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
+                .writeValueAsBytes(QueueContext.builder()
+                        .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
         Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
@@ -230,12 +245,36 @@ public class HandlerTest {
 
         when(exceptionInterface.process()).thenThrow(new KnowException());
 
-        testHandler.handleDelivery("ANY", envelope, null,
-            SerDe.mapper().writeValueAsBytes(QueueContext.builder().build()));
+        testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
+                .writeValueAsBytes(QueueContext.builder()
+                        .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
         Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
         Assert.assertEquals(false, boolCaptor.getValue());
+    }
+
+    @Test
+    public void testPriorityQueueConsumptionOnRetryWithInsufficientMaxRetries() throws IOException {
+        final var exceptionInterface = mock(ExceptionInterface.class);
+        final var testHandler = getHandler(mainQueueHandlerTag, exceptionInterface, true, 0);
+        when(exceptionInterface.process()).thenThrow(new KnowException());
+        testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
+                .writeValueAsBytes(QueueContext.builder()
+                        .messagePriority(1)
+                        .build())
+        );
+        verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
+        Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
+        Assert.assertEquals(false, boolCaptor.getValue());
+        verify(channel, times(1)).basicPublish(any(), any(), any(), any());
+    }
+
+    interface ExceptionInterface {
+
+        boolean process();
+
+        boolean processSideline();
     }
 
     static class ExceptionTrouper extends Trouper<QueueContext> {
@@ -244,30 +283,29 @@ public class HandlerTest {
 
         protected ExceptionTrouper(String queueName,
                                    QueueConfiguration config,
-                                   RabbitConnection connection, Class<? extends QueueContext> clazz,
-                                   Set<Class<?>> droppedExceptionTypes, ExceptionInterface testInterface
-        ) {
+                                   RabbitConnection connection,
+                                   Class<? extends QueueContext> clazz,
+                                   Set<Class<?>> droppedExceptionTypes,
+                                   ExceptionInterface testInterface) {
             super(queueName, config, connection, clazz, droppedExceptionTypes);
             this.testInterface = testInterface;
         }
 
         @Override
-        public boolean process(QueueContext queueContext, QAccessInfo accessInfo) {
+        public boolean process(QueueContext queueContext,
+                               QAccessInfo accessInfo) {
             return testInterface.process();
         }
 
         @Override
-        public boolean processSideline(QueueContext queueContext, QAccessInfo accessInfo) {
+        public boolean processSideline(QueueContext queueContext,
+                                       QAccessInfo accessInfo) {
             return testInterface.processSideline();
         }
     }
 
-    interface ExceptionInterface {
-        boolean process();
-        boolean processSideline();
-    }
-
     static class KnowException extends RuntimeException {
+
     }
 
 }

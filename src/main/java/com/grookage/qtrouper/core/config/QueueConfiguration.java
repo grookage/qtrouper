@@ -17,11 +17,15 @@ package com.grookage.qtrouper.core.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.*;
-
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * @author koushik
@@ -34,6 +38,7 @@ import javax.validation.constraints.Min;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class QueueConfiguration {
+
     private static final String DEFAULT_NAMESPACE = "qtrouper";
     @Builder.Default
     private String namespace = DEFAULT_NAMESPACE;
@@ -51,9 +56,11 @@ public class QueueConfiguration {
     private RetryConfiguration retry;
     @Valid
     private SidelineConfiguration sideline;
+    @Builder.Default
+    private int maxPriority = 0;
 
     @JsonIgnore
-    public boolean isConsumerEnabled(){
+    public boolean isConsumerEnabled() {
         return !consumerDisabled;
     }
 

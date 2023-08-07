@@ -36,37 +36,49 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public abstract class TrouperBundle<T extends Configuration> implements ConfiguredBundle<T> {
 
-    public abstract RabbitConfiguration getRabbitConfiguration(T configuration);
     @Getter
     private RabbitConnection rabbitConnection;
 
+    public abstract RabbitConfiguration getRabbitConfiguration(T configuration);
+
     /**
      * Sets the objectMapper properties and initializes RabbitConnection, along with its health check
-     * @param configuration     {@link T}               The typed configuration against which the said TrouperBundle is initialized
-     * @param environment       {@link Environment}     The dropwizard environment object.
+     *
+     * @param configuration {@link T}               The typed configuration against which the said TrouperBundle is
+     * initialized
+     * @param environment {@link Environment}     The dropwizard environment object.
      */
     @Override
-    public void run(T configuration, Environment environment){
-        environment.getObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-        environment.getObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        environment.getObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        environment.getObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        environment.getObjectMapper().configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-        environment.getObjectMapper().configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true);
+    public void run(T configuration,
+                    Environment environment) {
+        environment.getObjectMapper()
+                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        environment.getObjectMapper()
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        environment.getObjectMapper()
+                .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        environment.getObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        environment.getObjectMapper()
+                .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        environment.getObjectMapper()
+                .configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true);
         SerDe.init(environment.getObjectMapper());
         rabbitConnection = new RabbitConnection(getRabbitConfiguration(configuration), environment.metrics());
-        environment.lifecycle().manage(new Managed() {
-            @Override
-            public void start() {
-                rabbitConnection.start();
-            }
+        environment.lifecycle()
+                .manage(new Managed() {
+                    @Override
+                    public void start() {
+                        rabbitConnection.start();
+                    }
 
-            @Override
-            public void stop() {
-                rabbitConnection.stop();
-            }
-        });
-        environment.healthChecks().register("qTrouper-health-check", new TrouperHealthCheck(rabbitConnection));
+                    @Override
+                    public void stop() {
+                        rabbitConnection.stop();
+                    }
+                });
+        environment.healthChecks()
+                .register("qTrouper-health-check", new TrouperHealthCheck(rabbitConnection));
     }
 
     @Override

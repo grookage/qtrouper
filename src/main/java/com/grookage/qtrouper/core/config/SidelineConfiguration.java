@@ -16,7 +16,11 @@
 package com.grookage.qtrouper.core.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 /**
  * @author koushik
@@ -28,8 +32,8 @@ import lombok.*;
 @Builder
 @EqualsAndHashCode
 public class SidelineConfiguration {
+
     @Builder.Default
     private boolean enabled = true;
     private int concurrency;
-
 }

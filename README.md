@@ -3,42 +3,47 @@
 > Do raindrops follow a certain hierarchy when they fall?
 > - by Anthony T. Hincks
 
-
 ### Maven Dependency
 
 Use the following maven dependency:
+
 ```xml
 <dependency>
     <groupId>com.grookage.qtrouper</groupId>
     <artifactId>qtrouper</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
 ### Build instructions
-  - Clone the source:
 
-        git clone github.com/grookage/qtrouper
+- Clone the source:
 
-  - Build
+      git clone github.com/grookage/qtrouper
 
-        mvn install
+- Build
+
+      mvn install
 
 QTrouper provides the following capabilities
-  - Create a hierarchy of retry and sideline for queue
-  - Configure the number of times and the backoff on the retry queue
-  - Enable consumption on the sideline queue or otherwise.
-  - Queue the entire context with intermediate objects, so long as they are serializable.
-  - An interface for consumption of main queue and sideline queue messages
+
+- Create a hierarchy of retry and sideline for queue
+- Configure the number of times and the backoff on the retry queue
+- Enable consumption on the sideline queue or otherwise.
+- Queue the entire context with intermediate objects, so long as they are serializable.
+- An interface for consumption of main queue and sideline queue messages
 
 # Key Concepts
 
-  - Main Queue      : A queue on which the primary action is performed. Define a consumer on this queue by extending the Trouper class and implementing its process method.
-  - Retry Queue     : A retry queue is not visible to the user. It is responsible for expiring a message and dead lettering into main queue till the maxRetryCount is not breached.
-  - Sideline Queue  : A sideline queue on which the tertiary action is performed. Define a consumer on this queue by extending the Trouper class and implementing its processSideline method
-  - QueueContex     : A Map to a key + a serializable object that gets enqueued in the queues
-  - Trouper         : The Trouper is the queueing interface to provide main_queue, retry_queue and sideline_queue implementations for any call to action.
-
+- Main Queue      : A queue on which the primary action is performed. Define a consumer on this
+  queue by extending the Trouper class and implementing its process method.
+- Retry Queue     : A retry queue is not visible to the user. It is responsible for expiring a
+  message and dead lettering into main queue till the maxRetryCount is not breached.
+- Sideline Queue  : A sideline queue on which the tertiary action is performed. Define a consumer on
+  this queue by extending the Trouper class and implementing its processSideline method
+- QueueContex     : A Map to a key + a serializable object that gets enqueued in the queues
+- Trouper         : The Trouper is the queueing interface to provide main_queue, retry_queue and
+  sideline_queue implementations for any call to action.
 
 > The overriding design goal for qtrouper model
 > is to make it as ready as possible to onboard a new message processor.
@@ -84,14 +89,14 @@ static class SampleConfiguration extends Configuration{
 
 ```
 
-## Sample Actor
+## Sample Trouper
 
 ```
 
-static class QueueingActor extends QTrouper<QueueContext> {
+static class TestTrouper extends QTrouper<QueueContext> {
 
         @Inject
-        public SymphonyActor(QueueConfiguration consumerConfiguration, RabbitConnection rabbitConnection) {
+        public TestTrouper(QueueConfiguration consumerConfiguration, RabbitConnection rabbitConnection) {
             super("sampleQueue",
                     consumerConfiguration,
                     rabbitConnection,
@@ -127,16 +132,14 @@ LICENSE
 
 Copyright 2019 Koushik R <rkoushik.14@gmail.com>.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+compliance with the License. You may obtain a copy of the License at
 
 http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
 
 

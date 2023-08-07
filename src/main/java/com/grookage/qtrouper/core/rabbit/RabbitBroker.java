@@ -15,15 +15,14 @@
  */
 package com.grookage.qtrouper.core.rabbit;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author koushik
@@ -33,6 +32,7 @@ import javax.validation.constraints.NotNull;
 @NoArgsConstructor
 @Builder
 public class RabbitBroker {
+
     @NotEmpty
     @NotNull
     private String host;

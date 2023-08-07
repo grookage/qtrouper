@@ -16,7 +16,12 @@
 package com.grookage.qtrouper.core.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * @author koushik
@@ -29,6 +34,7 @@ import lombok.*;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RetryConfiguration {
+
     @Builder.Default
     private boolean enabled = true;
     private long ttlMs;

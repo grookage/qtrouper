@@ -15,25 +15,27 @@
  */
 package com.grookage.qtrouper.core.config;
 
-import lombok.val;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class QueueConfigurationTest {
 
-  @Test
-  public void testQueueConfigurationDefaultViaConstructor() {
-      final var queueConfiguration = new QueueConfiguration();
-      Assert.assertFalse(queueConfiguration.isConsumerDisabled());
-      Assert.assertEquals(3, queueConfiguration.getConcurrency());
-      Assert.assertEquals("qtrouper", queueConfiguration.getNamespace());
-  }
+    @Test
+    public void testQueueConfigurationDefaultViaConstructor() {
+        final var queueConfiguration = new QueueConfiguration();
+        Assert.assertFalse(queueConfiguration.isConsumerDisabled());
+        Assert.assertEquals(3, queueConfiguration.getConcurrency());
+        Assert.assertEquals("qtrouper", queueConfiguration.getNamespace());
+        Assert.assertEquals(0, queueConfiguration.getMaxPriority());
+    }
 
-  @Test
-  public void testQueueConfigurationDefaultViaBuilder() {
-      final var queueViaBuilder = QueueConfiguration.builder().build();
-      Assert.assertFalse(queueViaBuilder.isConsumerDisabled());
-      Assert.assertEquals(3, queueViaBuilder.getConcurrency());
-      Assert.assertEquals("qtrouper", queueViaBuilder.getNamespace());
-  }
+    @Test
+    public void testQueueConfigurationDefaultViaBuilder() {
+        final var queueViaBuilder = QueueConfiguration.builder()
+                .build();
+        Assert.assertFalse(queueViaBuilder.isConsumerDisabled());
+        Assert.assertEquals(3, queueViaBuilder.getConcurrency());
+        Assert.assertEquals("qtrouper", queueViaBuilder.getNamespace());
+        Assert.assertEquals(0, queueViaBuilder.getMaxPriority());
+    }
 }

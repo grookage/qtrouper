@@ -17,20 +17,18 @@ package com.grookage.qtrouper.core.rabbit;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
 import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.impl.StandardMetricsCollector;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import javax.inject.Singleton;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-
-import javax.inject.Singleton;
-import java.util.Map;
-import java.util.concurrent.Executors;
 
 /**
  * @author koushik
@@ -40,6 +38,7 @@ import java.util.concurrent.Executors;
 @Getter
 @SuppressWarnings("unused")
 public class RabbitConnection {
+
     private final RabbitConfiguration config;
     private final MetricRegistry metricRegistry;
     private Connection connection;
@@ -60,11 +59,17 @@ public class RabbitConnection {
     public void start() {
         log.info("Starting Rabbit Connection");
         final var factory = new ConnectionFactory();
-        if (!Strings.isNullOrEmpty(config.getUserName())) factory.setUsername(config.getUserName());
-        if (!Strings.isNullOrEmpty(config.getPassword())) factory.setPassword(config.getPassword());
-        if (!Strings.isNullOrEmpty(config.getVirtualHost())) factory.setVirtualHost(config.getVirtualHost());
-        if(config.isSslEnabled()){
-           factory.useSslProtocol();
+        if (!Strings.isNullOrEmpty(config.getUserName())) {
+            factory.setUsername(config.getUserName());
+        }
+        if (!Strings.isNullOrEmpty(config.getPassword())) {
+            factory.setPassword(config.getPassword());
+        }
+        if (!Strings.isNullOrEmpty(config.getVirtualHost())) {
+            factory.setVirtualHost(config.getVirtualHost());
+        }
+        if (config.isSslEnabled()) {
+            factory.useSslProtocol();
         }
         if (config.isMetricsEnabled() && null != metricRegistry) {
             factory.setMetricsCollector(new StandardMetricsCollector(metricRegistry));
@@ -75,7 +80,8 @@ public class RabbitConnection {
         factory.setRequestedHeartbeat(60);
         connection = factory.newConnection(Executors.newFixedThreadPool(config.getThreadPoolSize()), config.getBrokers()
                 .stream()
-                .map(broker -> new Address(broker.getHost(), broker.getPort())).toArray(Address[]::new));
+                .map(broker -> new Address(broker.getHost(), broker.getPort()))
+                .toArray(Address[]::new));
         channel = connection.createChannel();
         log.info("Started Rabbit Connection");
     }
@@ -125,22 +131,26 @@ public class RabbitConnection {
         log.info("Created queue: {}", queueName);
     }
 
+    public Map<String, Object> rmqOpts(int maxPriority) {
+        final var priorityOpts = rmqOpts();
+        if (maxPriority > 0) {
+            priorityOpts.put("x-max-priority", maxPriority);
+        }
+        return priorityOpts;
+    }
+
     public Map<String, Object> rmqOpts() {
-        return ImmutableMap.<String, Object>builder()
-                .put("x-ha-policy", "all")
-                .put("ha-mode", "all")
-                .build();
+        final var opts = new HashMap<String, Object>();
+        opts.put("x-ha-policy", "all");
+        opts.put("ha-mode", "all");
+        return opts;
     }
 
-    public Map<String, Object> rmqOpts(String deadLetterExchange, String routingKey) {
-        return ImmutableMap.<String, Object>builder()
-                .put("x-ha-policy", "all")
-                .put("ha-mode", "all")
-                .put("x-dead-letter-exchange", deadLetterExchange)
-                .put("x-dead-letter-routing-key", routingKey)
-                .build();
+    public Map<String, Object> rmqOpts(String deadLetterExchange,
+                                       String routingKey) {
+        final var retryOpts = rmqOpts();
+        retryOpts.put("x-dead-letter-exchange", deadLetterExchange);
+        retryOpts.put("x-dead-letter-routing-key", routingKey);
+        return retryOpts;
     }
-
-
-
 }

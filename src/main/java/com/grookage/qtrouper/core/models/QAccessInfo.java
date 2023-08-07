@@ -15,7 +15,11 @@
  */
 package com.grookage.qtrouper.core.models;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 /**
  * @author koushik
@@ -26,6 +30,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class QAccessInfo {
+
     private boolean idempotencyCheckRequired;
     private int retryCount;
 }
