@@ -27,6 +27,8 @@ public class QueueConfigurationTest {
         Assert.assertEquals(3, queueConfiguration.getConcurrency());
         Assert.assertEquals("qtrouper", queueConfiguration.getNamespace());
         Assert.assertEquals(0, queueConfiguration.getMaxPriority());
+        Assert.assertEquals(1, queueConfiguration.getPrefetchCount());
+        Assert.assertFalse(queueConfiguration.isConsumerDisabled());
     }
 
     @Test
@@ -37,5 +39,8 @@ public class QueueConfigurationTest {
         Assert.assertEquals(3, queueViaBuilder.getConcurrency());
         Assert.assertEquals("qtrouper", queueViaBuilder.getNamespace());
         Assert.assertEquals(0, queueViaBuilder.getMaxPriority());
+        Assert.assertEquals(1, queueViaBuilder.getPrefetchCount());
+        Assert.assertFalse(queueViaBuilder.isConsumerDisabled());
+
     }
 }

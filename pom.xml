@@ -270,6 +270,12 @@
         <!--Sonar properties-->
         <sonar.organization>grookage</sonar.organization>
         <testcontainer.rabbitmq.version>1.16.2</testcontainer.rabbitmq.version>
+
+        <sonar.coverage.exclusions>
+            **com/grookage/qtrouper/Trouper.java,
+            **com/grookage/qtrouper/TrouperBundle.java
+            **com/grookage/qtrouper/core/rabbit/RabbitConnection.java
+        </sonar.coverage.exclusions>
     </properties>
 
 
