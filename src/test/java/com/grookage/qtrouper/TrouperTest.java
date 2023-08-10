@@ -24,7 +24,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grookage.qtrouper.core.config.QueueConfiguration;
 import com.grookage.qtrouper.core.config.RetryConfiguration;
 import com.grookage.qtrouper.core.config.SidelineConfiguration;
@@ -32,7 +31,6 @@ import com.grookage.qtrouper.core.models.QAccessInfo;
 import com.grookage.qtrouper.core.models.QueueContext;
 import com.grookage.qtrouper.core.rabbit.RabbitConfiguration;
 import com.grookage.qtrouper.core.rabbit.RabbitConnection;
-import com.grookage.qtrouper.utils.SerDe;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import java.util.ArrayList;

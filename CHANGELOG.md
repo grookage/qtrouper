@@ -2,8 +2,9 @@
 
 - Added Priority Queue Support to Trouper
 - Ability to declare a queue with maxPriority
-- Retry Queues (Since they work with TTLs) don't operate with priority but by default cascade the priority to the MQ
-- Sideline Publishes can be with a Priority, since consumers can be configured on a sideline. 
+- Retry Queues (Since they work with TTLs) don't operate with priority but by default cascade the
+  priority to the MQ
+- Sideline Publishes can be with a Priority, since consumers can be configured on a sideline.
 
 ### Version 1.0.0
 

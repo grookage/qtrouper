@@ -147,7 +147,7 @@ public abstract class Trouper<C extends QueueContext> {
             final var expiration = (long) properties.getHeaders()
                     .getOrDefault(EXPIRATION, retry.getTtlMs());
             final var newExpiration = expiration * retry.getBackOffFactor();
-            if(retried){
+            if (retried) {
                 queueContext.setMessagePriority((int) properties.getHeaders()
                         .getOrDefault(MESSAGE_PRIORITY, 0));
             }
@@ -269,7 +269,8 @@ public abstract class Trouper<C extends QueueContext> {
                 .expiration(String.valueOf(expiration))
                 .deliveryMode(2)
                 .headers(Map.of(RETRY_COUNT, retryCount, EXPIRATION, expiration, EXPIRES_AT_ENABLED, expiresAtEnabled,
-                        EXPIRES_AT_TIMESTAMP, expiresAt, MESSAGE_PRIORITY, queueContext.getMessagePriority(), RETRIED, true))
+                        EXPIRES_AT_TIMESTAMP, expiresAt, MESSAGE_PRIORITY, queueContext.getMessagePriority(), RETRIED,
+                        true))
                 .build();
         retryPublish(queueContext, properties);
     }
