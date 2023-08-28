@@ -88,7 +88,9 @@ public class HandlerTest {
     }
 
     private Handler getHandler(String queueTag,
-                               ExceptionInterface testInterface, boolean retryEnabled, int maxRetries) throws IOException {
+                               ExceptionInterface testInterface,
+                               boolean retryEnabled,
+                               int maxRetries) throws IOException {
         final var queueConfiguration = QueueConfiguration.builder()
                 .retry(RetryConfiguration.builder()
                         .enabled(retryEnabled)
@@ -120,7 +122,7 @@ public class HandlerTest {
 
     private Handler getHandlerAfterSettingUp(String queueTag,
                                              ExceptionInterface testInterface) throws IOException {
-       return getHandler(queueTag, testInterface, false, 0);
+        return getHandler(queueTag, testInterface, false, 0);
     }
 
     @Test
@@ -262,8 +264,7 @@ public class HandlerTest {
         testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
                 .writeValueAsBytes(QueueContext.builder()
                         .messagePriority(1)
-                        .build())
-        );
+                        .build()));
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
         Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
         Assert.assertEquals(false, boolCaptor.getValue());

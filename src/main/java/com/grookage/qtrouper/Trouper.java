@@ -147,7 +147,7 @@ public abstract class Trouper<C extends QueueContext> {
             final var expiration = (long) properties.getHeaders()
                     .getOrDefault(EXPIRATION, retry.getTtlMs());
             final var newExpiration = expiration * retry.getBackOffFactor();
-            if(retried){
+            if (retried) {
                 queueContext.setMessagePriority((int) properties.getHeaders()
                         .getOrDefault(MESSAGE_PRIORITY, 0));
             }
@@ -269,7 +269,8 @@ public abstract class Trouper<C extends QueueContext> {
                 .expiration(String.valueOf(expiration))
                 .deliveryMode(2)
                 .headers(Map.of(RETRY_COUNT, retryCount, EXPIRATION, expiration, EXPIRES_AT_ENABLED, expiresAtEnabled,
-                        EXPIRES_AT_TIMESTAMP, expiresAt, MESSAGE_PRIORITY, queueContext.getMessagePriority(), RETRIED, true))
+                        EXPIRES_AT_TIMESTAMP, expiresAt, MESSAGE_PRIORITY, queueContext.getMessagePriority(), RETRIED,
+                        true))
                 .build();
         retryPublish(queueContext, properties);
     }
@@ -320,7 +321,7 @@ public abstract class Trouper<C extends QueueContext> {
         this.publishChannel = connection.newChannel();
         connection.ensure(queueName, this.config.getNamespace(), connection.rmqOpts(this.config.getMaxPriority()));
         connection.ensure(getRetryQueue(), dlExchange, connection.rmqOpts(exchange, queueName));
-        connection.ensure(getSidelineQueue(), this.config.getNamespace(), connection.rmqOpts());
+        connection.ensure(getSidelineQueue(), this.config.getNamespace(), connection.rmqOpts(this.config.getMaxPriority()));
         if (config.isConsumerEnabled()) {
             IntStream.rangeClosed(1, config.getConcurrency())
                     .forEach(i -> addHandler(i, false));
