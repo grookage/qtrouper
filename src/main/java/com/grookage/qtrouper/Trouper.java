@@ -320,7 +320,7 @@ public abstract class Trouper<C extends QueueContext> {
         this.publishChannel = connection.newChannel();
         connection.ensure(queueName, this.config.getNamespace(), connection.rmqOpts(this.config.getMaxPriority()));
         connection.ensure(getRetryQueue(), dlExchange, connection.rmqOpts(exchange, queueName));
-        connection.ensure(getSidelineQueue(), this.config.getNamespace(), connection.rmqOpts(this.config.getMaxPriority()));
+        connection.ensure(getSidelineQueue(), this.config.getNamespace(), connection.rmqOpts());
         if (config.isConsumerEnabled()) {
             IntStream.rangeClosed(1, config.getConcurrency())
                     .forEach(i -> addHandler(i, false));

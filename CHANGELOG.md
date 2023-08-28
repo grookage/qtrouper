@@ -1,6 +1,3 @@
-### Version 1.0.3
-- Fixed [Bug] Creating Sideline Queue with maxPriority.
-
 ### Version 1.0.2
 
 - Added Priority Queue Support to Trouper
