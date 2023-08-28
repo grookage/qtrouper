@@ -1,3 +1,7 @@
+### Version 1.0.3
+
+- Added the missing priority to the sideline queue
+
 ### Version 1.0.2
 
 - Added Priority Queue Support to Trouper
