@@ -22,6 +22,7 @@ import com.grookage.qtrouper.core.models.QueueContext;
 import com.grookage.qtrouper.core.rabbit.RabbitConnection;
 import com.grookage.qtrouper.utils.SerDe;
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
@@ -118,8 +119,6 @@ public abstract class Trouper<C extends QueueContext> {
                 .getOrDefault(EXPIRES_AT_ENABLED, false);
         final var expiresAt = (long) properties.getHeaders()
                 .getOrDefault(EXPIRES_AT_TIMESTAMP, 0L);
-        final var retried = (boolean) properties.getHeaders()
-                .getOrDefault(RETRIED, false);
 
         if (isMessageExpired(expiresAtEnabled, expiresAt)) {
             log.info("Ignoring queueContext due to expiry {}", queueContext);
@@ -128,29 +127,35 @@ public abstract class Trouper<C extends QueueContext> {
 
         try {
             final var processed = process(queueContext, getAccessInformation(properties));
-            if (processed) {
-                return true;
-            }
+            return processed || handleRetryMechanism(properties, queueContext, expiresAt,
+                expiresAtEnabled);
+
         } catch (Exception ex) {
             log.error("Exception while processing the queueContext {}", queueContext, ex);
+            handleRetryMechanism(properties, queueContext, expiresAt, expiresAtEnabled);
             throw ex;
         }
+    }
 
+    private boolean handleRetryMechanism(BasicProperties properties, C queueContext, long expiresAt,
+        boolean expiresAtEnabled) {
+        final var retried = (boolean) properties.getHeaders()
+            .getOrDefault(RETRIED, false);
         final var retry = config.getRetry();
         if (retry.isEnabled()) {
             var retryCount = (int) properties.getHeaders()
-                    .getOrDefault(RETRY_COUNT, 0);
+                .getOrDefault(RETRY_COUNT, 0);
             if (retryCount >= retry.getMaxRetries()) {
                 sidelinePublish(queueContext);
                 return true;
             }
             retryCount++;
             final var expiration = (long) properties.getHeaders()
-                    .getOrDefault(EXPIRATION, retry.getTtlMs());
+                .getOrDefault(EXPIRATION, retry.getTtlMs());
             final var newExpiration = expiration * retry.getBackOffFactor();
             if(retried){
                 queueContext.setMessagePriority((int) properties.getHeaders()
-                        .getOrDefault(MESSAGE_PRIORITY, 0));
+                    .getOrDefault(MESSAGE_PRIORITY, 0));
             }
             retryPublishWithExpiry(queueContext, retryCount, newExpiration, expiresAt, expiresAtEnabled);
         } else {

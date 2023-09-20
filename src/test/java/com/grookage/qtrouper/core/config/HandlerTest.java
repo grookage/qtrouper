@@ -124,7 +124,7 @@ public class HandlerTest {
     }
 
     @Test
-    public void testBasicAckAndSidelineWhenTrouperProcessThrowUnknownException() throws IOException {
+    public void testBasicRejectAndSidelineWhenTrouperProcessThrowUnknownException() throws IOException {
 
         final var exceptionInterface = mock(ExceptionInterface.class);
         final var testHandler = getHandlerAfterSettingUp(mainQueueHandlerTag, exceptionInterface);
@@ -134,6 +134,24 @@ public class HandlerTest {
         testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
                 .writeValueAsBytes(QueueContext.builder()
                         .build()));
+
+        verify(channel).basicReject(deliveryTagCaptor.capture(), boolCaptor.capture());
+        Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
+        Assert.assertEquals(true, boolCaptor.getValue());
+        verify(channel, times(1)).basicPublish(any(), any(), any(), any());
+    }
+
+    @Test
+    public void testBasicAckAndSidelineWhenTrouperProcessThrowKnownException() throws IOException {
+
+        final var exceptionInterface = mock(ExceptionInterface.class);
+        final var testHandler = getHandlerAfterSettingUp(mainQueueHandlerTag, exceptionInterface);
+
+        when(exceptionInterface.process()).thenThrow(new KnowException());
+
+        testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
+            .writeValueAsBytes(QueueContext.builder()
+                .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
         Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
