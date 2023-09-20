@@ -133,6 +133,7 @@ public abstract class Trouper<C extends QueueContext> {
             }
         } catch (Exception ex) {
             log.error("Exception while processing the queueContext {}", queueContext, ex);
+            throw ex;
         }
 
         final var retry = config.getRetry();
