@@ -131,10 +131,19 @@ public abstract class Trouper<C extends QueueContext> {
                 expiresAtEnabled);
 
         } catch (Exception ex) {
+            if (isExceptionIgnorable(ex)) {
+                log.info("Ack known exception for queueContext{}", queueContext, ex);
+                return true;
+            }
             log.error("Exception while processing the queueContext {}", queueContext, ex);
-            handleRetryMechanism(properties, queueContext, expiresAt, expiresAtEnabled);
-            throw ex;
+            return handleRetryMechanism(properties, queueContext, expiresAt,
+                    expiresAtEnabled);
         }
+    }
+
+    private boolean isExceptionIgnorable(Throwable t) {
+        return droppedExceptionTypes.stream()
+            .anyMatch(exceptionType -> ClassUtils.isAssignable(t.getClass(), exceptionType));
     }
 
     private boolean handleRetryMechanism(BasicProperties properties, C queueContext, long expiresAt,
@@ -377,11 +386,6 @@ public abstract class Trouper<C extends QueueContext> {
             getChannel().basicQos(prefetchCount);
         }
 
-        private boolean isExceptionIgnorable(Throwable t) {
-            return droppedExceptionTypes.stream()
-                    .anyMatch(exceptionType -> ClassUtils.isAssignable(t.getClass(), exceptionType));
-        }
-
         /**
          * Need to augment the properties with checks and balances for people might push into the queue async, w/o any
          * header
@@ -446,7 +450,7 @@ public abstract class Trouper<C extends QueueContext> {
                     log.warn("Acked message due to exception: ", t);
                     getChannel().basicAck(envelope.getDeliveryTag(), false);
                 } else {
-                    getChannel().basicReject(envelope.getDeliveryTag(), true);
+                getChannel().basicReject(envelope.getDeliveryTag(), true);
                 }
             }
         }
