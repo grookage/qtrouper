@@ -253,7 +253,7 @@
     </profiles>
 
     <properties>
-        <amqp.version>5.14.0</amqp.version>
+        <amqp.version>5.18.0</amqp.version>
         <cglib.version>3.2.5</cglib.version>
         <dropwizard.version>2.0.28</dropwizard.version>
         <guava.version>23.0</guava.version>
