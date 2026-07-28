@@ -15,14 +15,6 @@
  */
 package com.grookage.qtrouper.core.config;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import com.grookage.qtrouper.Trouper;
@@ -35,14 +27,18 @@ import com.grookage.qtrouper.utils.SerDe;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Envelope;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
+
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings("unchecked")
 public class HandlerTest {
@@ -56,7 +52,7 @@ public class HandlerTest {
     private ArgumentCaptor<Long> deliveryTagCaptor;
     private ArgumentCaptor<Boolean> boolCaptor;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         channel = mock(Channel.class);
         rabbitConnection = mock(RabbitConnection.class);
@@ -88,11 +84,11 @@ public class HandlerTest {
     }
 
     private Handler getHandler(String queueTag,
-                               ExceptionInterface testInterface, boolean retryEnabled, int maxRetries) throws IOException {
+                               ExceptionInterface testInterface, boolean retryEnabled) throws IOException {
         final var queueConfiguration = QueueConfiguration.builder()
                 .retry(RetryConfiguration.builder()
                         .enabled(retryEnabled)
-                        .maxRetries(maxRetries)
+                        .maxRetries(0)
                         .build())
                 .sideline(SidelineConfiguration.builder()
                         .enabled(true)
@@ -120,7 +116,7 @@ public class HandlerTest {
 
     private Handler getHandlerAfterSettingUp(String queueTag,
                                              ExceptionInterface testInterface) throws IOException {
-       return getHandler(queueTag, testInterface, false, 0);
+       return getHandler(queueTag, testInterface, false);
     }
 
     @Test
@@ -136,8 +132,8 @@ public class HandlerTest {
                         .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
-        Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
-        Assert.assertEquals(false, boolCaptor.getValue());
+        Assertions.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
+        Assertions.assertEquals(false, boolCaptor.getValue());
         verify(channel, times(1)).basicPublish(any(), any(), any(), any());
     }
 
@@ -153,8 +149,8 @@ public class HandlerTest {
                         .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
-        Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
-        Assert.assertEquals(false, boolCaptor.getValue());
+        Assertions.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
+        Assertions.assertEquals(false, boolCaptor.getValue());
     }
 
     @Test
@@ -169,8 +165,8 @@ public class HandlerTest {
                         .build()));
 
         verify(channel).basicReject(deliveryTagCaptor.capture(), boolCaptor.capture());
-        Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
-        Assert.assertEquals(true, boolCaptor.getValue());
+        Assertions.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
+        Assertions.assertEquals(true, boolCaptor.getValue());
     }
 
     @Test
@@ -185,8 +181,8 @@ public class HandlerTest {
                         .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
-        Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
-        Assert.assertEquals(false, boolCaptor.getValue());
+        Assertions.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
+        Assertions.assertEquals(false, boolCaptor.getValue());
     }
 
     @Test
@@ -201,8 +197,8 @@ public class HandlerTest {
                         .build()));
 
         verify(channel).basicReject(deliveryTagCaptor.capture(), boolCaptor.capture());
-        Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
-        Assert.assertEquals(true, boolCaptor.getValue());
+        Assertions.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
+        Assertions.assertEquals(true, boolCaptor.getValue());
     }
 
     @Test
@@ -217,8 +213,8 @@ public class HandlerTest {
                         .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
-        Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
-        Assert.assertEquals(false, boolCaptor.getValue());
+        Assertions.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
+        Assertions.assertEquals(false, boolCaptor.getValue());
     }
 
     @Test
@@ -233,8 +229,8 @@ public class HandlerTest {
                         .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
-        Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
-        Assert.assertEquals(false, boolCaptor.getValue());
+        Assertions.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
+        Assertions.assertEquals(false, boolCaptor.getValue());
         verify(channel, times(1)).basicPublish(any(), any(), any(), any());
     }
 
@@ -250,14 +246,14 @@ public class HandlerTest {
                         .build()));
 
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
-        Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
-        Assert.assertEquals(false, boolCaptor.getValue());
+        Assertions.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
+        Assertions.assertEquals(false, boolCaptor.getValue());
     }
 
     @Test
     public void testPriorityQueueConsumptionOnRetryWithInsufficientMaxRetries() throws IOException {
         final var exceptionInterface = mock(ExceptionInterface.class);
-        final var testHandler = getHandler(mainQueueHandlerTag, exceptionInterface, true, 0);
+        final var testHandler = getHandler(mainQueueHandlerTag, exceptionInterface, true);
         when(exceptionInterface.process()).thenThrow(new KnowException());
         testHandler.handleDelivery("ANY", envelope, null, SerDe.mapper()
                 .writeValueAsBytes(QueueContext.builder()
@@ -265,8 +261,8 @@ public class HandlerTest {
                         .build())
         );
         verify(channel).basicAck(deliveryTagCaptor.capture(), boolCaptor.capture());
-        Assert.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
-        Assert.assertEquals(false, boolCaptor.getValue());
+        Assertions.assertEquals(deliveryTag, deliveryTagCaptor.getValue());
+        Assertions.assertEquals(false, boolCaptor.getValue());
         verify(channel, times(1)).basicPublish(any(), any(), any(), any());
     }
 

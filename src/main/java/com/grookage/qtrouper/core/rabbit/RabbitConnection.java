@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import javax.inject.Singleton;
+import javax.net.ssl.SSLContext;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +70,7 @@ public class RabbitConnection {
             factory.setVirtualHost(config.getVirtualHost());
         }
         if (config.isSslEnabled()) {
-            factory.useSslProtocol();
+            factory.useSslProtocol(SSLContext.getDefault());
         }
         if (config.isMetricsEnabled() && null != metricRegistry) {
             factory.setMetricsCollector(new StandardMetricsCollector(metricRegistry));

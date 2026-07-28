@@ -16,15 +16,6 @@
 package com.grookage.qtrouper;
 
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grookage.qtrouper.core.config.QueueConfiguration;
 import com.grookage.qtrouper.core.config.RetryConfiguration;
 import com.grookage.qtrouper.core.config.SidelineConfiguration;
@@ -32,16 +23,18 @@ import com.grookage.qtrouper.core.models.QAccessInfo;
 import com.grookage.qtrouper.core.models.QueueContext;
 import com.grookage.qtrouper.core.rabbit.RabbitConfiguration;
 import com.grookage.qtrouper.core.rabbit.RabbitConnection;
-import com.grookage.qtrouper.utils.SerDe;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @author koushik
@@ -70,7 +63,7 @@ public class TrouperTest {
                 .build();
     }
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.rabbitConnection = mock(RabbitConnection.class);
     }
@@ -138,7 +131,7 @@ public class TrouperTest {
                 .build();
         when(channel.basicConsume(anyString(), anyBoolean(), any())).thenReturn("tag");
         final var trouper = getTrouperAfterStart(queueConfiguration);
-        Assert.assertEquals(1, trouper.getHandlers()
+        Assertions.assertEquals(1, trouper.getHandlers()
                 .size());
         trouper.stop();
     }
@@ -155,7 +148,7 @@ public class TrouperTest {
                 .sideline(getSidelineConfiguration(true, 10))
                 .build();
         final var trouper = getTrouperAfterStart(queueConfiguration);
-        Assert.assertEquals(20, trouper.getHandlers()
+        Assertions.assertEquals(20, trouper.getHandlers()
                 .size());
         trouper.stop();
     }
