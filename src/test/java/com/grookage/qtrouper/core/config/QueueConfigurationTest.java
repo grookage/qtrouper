@@ -15,32 +15,32 @@
  */
 package com.grookage.qtrouper.core.config;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class QueueConfigurationTest {
 
     @Test
     public void testQueueConfigurationDefaultViaConstructor() {
         final var queueConfiguration = new QueueConfiguration();
-        Assert.assertFalse(queueConfiguration.isConsumerDisabled());
-        Assert.assertEquals(3, queueConfiguration.getConcurrency());
-        Assert.assertEquals("qtrouper", queueConfiguration.getNamespace());
-        Assert.assertEquals(0, queueConfiguration.getMaxPriority());
-        Assert.assertEquals(1, queueConfiguration.getPrefetchCount());
-        Assert.assertFalse(queueConfiguration.isConsumerDisabled());
+        Assertions.assertFalse(queueConfiguration.isConsumerDisabled());
+        Assertions.assertEquals(3, queueConfiguration.getConcurrency());
+        Assertions.assertEquals("qtrouper", queueConfiguration.getNamespace());
+        Assertions.assertEquals(0, queueConfiguration.getMaxPriority());
+        Assertions.assertEquals(1, queueConfiguration.getPrefetchCount());
+        Assertions.assertFalse(queueConfiguration.isConsumerDisabled());
     }
 
     @Test
     public void testQueueConfigurationDefaultViaBuilder() {
         final var queueViaBuilder = QueueConfiguration.builder()
                 .build();
-        Assert.assertFalse(queueViaBuilder.isConsumerDisabled());
-        Assert.assertEquals(3, queueViaBuilder.getConcurrency());
-        Assert.assertEquals("qtrouper", queueViaBuilder.getNamespace());
-        Assert.assertEquals(0, queueViaBuilder.getMaxPriority());
-        Assert.assertEquals(1, queueViaBuilder.getPrefetchCount());
-        Assert.assertFalse(queueViaBuilder.isConsumerDisabled());
+        Assertions.assertFalse(queueViaBuilder.isConsumerDisabled());
+        Assertions.assertEquals(3, queueViaBuilder.getConcurrency());
+        Assertions.assertEquals("qtrouper", queueViaBuilder.getNamespace());
+        Assertions.assertEquals(0, queueViaBuilder.getMaxPriority());
+        Assertions.assertEquals(1, queueViaBuilder.getPrefetchCount());
+        Assertions.assertFalse(queueViaBuilder.isConsumerDisabled());
 
     }
 }

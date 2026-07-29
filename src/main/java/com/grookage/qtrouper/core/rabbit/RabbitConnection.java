@@ -16,16 +16,27 @@
 package com.grookage.qtrouper.core.rabbit;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.impl.StandardMetricsCollector;
+import java.io.FileInputStream;
+import java.security.KeyStore;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import javax.inject.Singleton;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +49,8 @@ import lombok.extern.slf4j.Slf4j;
 @Getter
 @SuppressWarnings("unused")
 public class RabbitConnection {
+
+    private static final String TLS = "TLSv1.2";
 
     private final RabbitConfiguration config;
     private final MetricRegistry metricRegistry;
@@ -69,7 +82,7 @@ public class RabbitConnection {
             factory.setVirtualHost(config.getVirtualHost());
         }
         if (config.isSslEnabled()) {
-            factory.useSslProtocol();
+            configureSsl(factory);
         }
         if (config.isMetricsEnabled() && null != metricRegistry) {
             factory.setMetricsCollector(new StandardMetricsCollector(metricRegistry));
@@ -98,6 +111,78 @@ public class RabbitConnection {
         if (null != connection && connection.isOpen()) {
             connection.close();
         }
+    }
+
+    @SneakyThrows
+    private void configureSsl(ConnectionFactory factory) {
+        final var trustManagers = Strings.isNullOrEmpty(config.getTrustStorePath())
+                ? null : buildTrustManagers();
+        final var keyManagers = Strings.isNullOrEmpty(config.getKeyStorePath())
+                ? null : buildKeyManagers();
+
+        if (trustManagers != null || keyManagers != null) {
+            final var protocol = Strings.isNullOrEmpty(config.getTlsProtocol())
+                    ? TLS : config.getTlsProtocol();
+            final var sslContext = SSLContext.getInstance(protocol);
+            sslContext.init(keyManagers, trustManagers, null);
+            factory.useSslProtocol(sslContext);
+        } else {
+            factory.useSslProtocol();
+        }
+
+        final var ciphers = config.getCiphers();
+        if (ciphers != null && !ciphers.isEmpty()) {
+            validateCiphers(ciphers);
+            factory.setSocketConfigurator(socket -> {
+                if (socket instanceof SSLSocket sslSocket) {
+                    sslSocket.setEnabledCipherSuites(ciphers.toArray(new String[0]));
+                }
+            });
+        }
+    }
+
+    @SneakyThrows
+    private TrustManager[] buildTrustManagers() {
+        Preconditions.checkNotNull(config.getTrustStorePassword(),
+                "Trust store password is required if trust store path has been provided");
+        final var trustStore = KeyStore.getInstance(config.getTrustStoreType());
+        try (var stream = new FileInputStream(config.getTrustStorePath())) {
+            trustStore.load(stream, config.getTrustStorePassword().toCharArray());
+        }
+        final var tmf = TrustManagerFactory.getInstance(
+                TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(trustStore);
+        return tmf.getTrustManagers();
+    }
+
+    @SneakyThrows
+    private KeyManager[] buildKeyManagers() {
+        Preconditions.checkNotNull(config.getKeyStorePassword(),
+                "Key store password is required if key store path has been provided");
+        final var keyStore = KeyStore.getInstance(config.getKeyStoreType());
+        try (var stream = new FileInputStream(config.getKeyStorePath())) {
+            keyStore.load(stream, config.getKeyStorePassword().toCharArray());
+        }
+        final var kmf = KeyManagerFactory.getInstance(
+                KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(keyStore, config.getKeyStorePassword().toCharArray());
+        return kmf.getKeyManagers();
+    }
+
+    @SneakyThrows
+    private void validateCiphers(List<String> ciphers) {
+        final var supported = Set.of(
+                SSLContext.getDefault().getSupportedSSLParameters()
+                        .getCipherSuites());
+        final var unsupported = ciphers.stream()
+                .filter(c -> !supported.contains(c))
+                .toList();
+        Preconditions.checkArgument(unsupported.isEmpty(),
+                "Unsupported cipher(s) configured: %s. "
+                        + "Ensure you are using Java cipher names "
+                        + "(e.g. TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384), "
+                        + "not OpenSSL names (e.g. ECDHE-RSA-AES256-GCM-SHA384)",
+                unsupported);
     }
 
     public Channel channel() {

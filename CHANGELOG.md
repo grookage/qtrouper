@@ -1,3 +1,9 @@
+### Version 1.0.4-RC1
+
+- Use JVM's default SSLContext for TLS connections, enabling auto-negotiation of the highest supported protocol (TLSv1.3 on Java 11+)
+- Fixes `SSLHandshakeException: insufficient_security` when connecting to brokers that require TLSv1.3
+- Upgraded amqp version and junit version to latest
+
 ### Version 1.0.2
 
 - Added Priority Queue Support to Trouper

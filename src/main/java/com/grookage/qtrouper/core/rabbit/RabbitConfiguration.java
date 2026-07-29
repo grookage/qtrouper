@@ -47,5 +47,15 @@ public class RabbitConfiguration {
     private String password = "";
     private String virtualHost;
     private boolean sslEnabled;
+    private String tlsProtocol;
+    private List<String> ciphers;
+    private String trustStorePath;
+    private String trustStorePassword;
+    @Builder.Default
+    private String trustStoreType = "JKS";
+    private String keyStorePath;
+    private String keyStorePassword;
+    @Builder.Default
+    private String keyStoreType = "JKS";
     private boolean metricsEnabled;
 }

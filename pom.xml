@@ -9,19 +9,19 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <forceJavacCompilerUse>true</forceJavacCompilerUse>
-                    <release>11</release>
-                    <source>11</source>
-                    <target>11</target>
+                    <release>${java.version}</release>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                 </configuration>
                 <dependencies>
                     <dependency>
                         <artifactId>asm</artifactId>
                         <groupId>org.ow2.asm</groupId>
-                        <version>7.2</version>
+                        <version>9.8</version>
                     </dependency>
                 </dependencies>
                 <groupId>org.apache.maven.plugins</groupId>
-                <version>3.8.1</version>
+                <version>${maven.compiler.version}</version>
             </plugin>
 
             <plugin>
@@ -35,7 +35,7 @@
                         <phase>test</phase>
                     </execution>
                 </executions>
-                <version>2.19.1</version>
+                <version>${maven.surefire.plugin.version}</version>
             </plugin>
 
             <plugin>
@@ -55,12 +55,57 @@
                     </execution>
                 </executions>
                 <groupId>org.apache.maven.plugins</groupId>
-                <version>3.2.0</version>
+                <version>${maven.source.plugin.version}</version>
             </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.5.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                    <autoPublish>true</autoPublish>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.7.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    <stagingProgressTimeoutMinutes>10</stagingProgressTimeoutMinutes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <configuration>
+                            <executable>gpg</executable>
+                            <useAgent>true</useAgent>
+                        </configuration>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
+                <groupId>org.apache.maven.plugins</groupId>
+                <version>${maven.gpg.plugin.version}</version>
+            </plugin>
+
+
             <plugin>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <configuration>
-                    <source>11</source>
+                    <source>${java.version}</source>
                 </configuration>
                 <executions>
                     <execution>
@@ -71,10 +116,24 @@
                     </execution>
                 </executions>
                 <groupId>org.apache.maven.plugins</groupId>
-                <version>3.3.0</version>
+                <version>${maven.javadoc.plugin.version}</version>
             </plugin>
         </plugins>
     </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+
     <dependencies>
         <dependency>
             <artifactId>lombok</artifactId>
@@ -82,29 +141,19 @@
             <scope>provided</scope>
             <version>${lombok.version}</version>
         </dependency>
+
         <dependency>
             <artifactId>dropwizard-core</artifactId>
             <groupId>io.dropwizard</groupId>
             <scope>provided</scope>
             <version>${dropwizard.version}</version>
         </dependency>
-        <dependency>
-            <artifactId>junit</artifactId>
-            <groupId>junit</groupId>
-            <scope>test</scope>
-            <version>${junit.version}</version>
-        </dependency>
+
         <dependency>
             <artifactId>dropwizard-testing</artifactId>
             <groupId>io.dropwizard</groupId>
             <scope>test</scope>
             <version>${dropwizard.version}</version>
-        </dependency>
-        <dependency>
-            <artifactId>mockito-core</artifactId>
-            <groupId>org.mockito</groupId>
-            <scope>test</scope>
-            <version>${mockito.version}</version>
         </dependency>
 
         <dependency>
@@ -119,10 +168,34 @@
             <groupId>com.rabbitmq</groupId>
             <version>${amqp.version}</version>
         </dependency>
+
+        <!-- Junit and Mockito -->
+        <dependency>
+            <artifactId>junit-jupiter</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <artifactId>mockito-core</artifactId>
+            <groupId>org.mockito</groupId>
+            <scope>test</scope>
+            <version>${mockito.version}</version>
+        </dependency>
+
+        <dependency>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <groupId>org.mockito</groupId>
+            <scope>test</scope>
+            <version>${mockito.version}</version>
+        </dependency>
     </dependencies>
-    <description>A simple interface to provide a java DSL atop RMQ, for message processing with
+
+    <description>
+        A simple interface to provide a java DSL atop RMQ, for message processing with
         programmable retries
     </description>
+
     <developers>
         <developer>
             <email>rkoushik.14@gmail.com</email>
@@ -153,6 +226,7 @@
             <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
+
     <groupId>com.grookage.qtrouper</groupId>
     <inceptionYear>2015</inceptionYear>
     <issueManagement>
@@ -175,95 +249,20 @@
 
     <packaging>jar</packaging>
 
-    <profiles>
-        <profile>
-            <activation>
-                <property>
-                    <name>release</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <configuration>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <serverId>ossrh</serverId>
-                        </configuration>
-                        <extensions>true</extensions>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <version>1.6.7</version>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <configuration>
-                                    <executable>gpg</executable>
-                                    <useAgent>true</useAgent>
-                                </configuration>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                            </execution>
-                        </executions>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <version>1.6</version>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-enforcer-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <configuration>
-                                    <fail>true</fail>
-                                    <rules>
-                                        <requireReleaseDeps>
-                                            <message>No Snapshots Allowed!</message>
-                                        </requireReleaseDeps>
-                                    </rules>
-                                </configuration>
-                                <goals>
-                                    <goal>enforce</goal>
-                                </goals>
-                                <id>enforce-no-snapshots</id>
-                            </execution>
-                        </executions>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <version>3.0.0-M2</version>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-release-plugin</artifactId>
-                        <configuration>
-                            <autoVersionSubmodules>true</autoVersionSubmodules>
-                            <goals>deploy</goals>
-                            <releaseProfiles>release</releaseProfiles>
-                            <useReleaseProfile>false</useReleaseProfile>
-                        </configuration>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <version>2.5.3</version>
-                    </plugin>
-                </plugins>
-            </build>
-            <id>release</id>
-        </profile>
-    </profiles>
-
     <properties>
-        <amqp.version>5.14.0</amqp.version>
+        <amqp.version>5.18.0</amqp.version>
         <cglib.version>3.2.5</cglib.version>
-        <dropwizard.version>2.0.28</dropwizard.version>
+        <dropwizard.version>2.1.12</dropwizard.version>
         <guava.version>23.0</guava.version>
         <jacoco.reportPath>${project.basedir}/../target/jacoco.exec</jacoco.reportPath>
         <jacoco.version>0.8.0</jacoco.version>
-        <junit.version>4.13.2</junit.version>
-        <lombok.version>1.18.22</lombok.version>
+        <junit.jupiter.version>5.8.2</junit.jupiter.version>
         <mockito.version>4.2.0</mockito.version>
+        <mockito.version>5.21.0</mockito.version>
+        <lombok.version>1.18.44</lombok.version>
+        <java.version>17</java.version>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!--Jacoco properties-->
         <reflections.version>0.10.2</reflections.version>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
@@ -276,8 +275,30 @@
             **com/grookage/qtrouper/TrouperBundle.java
             **com/grookage/qtrouper/core/rabbit/RabbitConnection.java
         </sonar.coverage.exclusions>
+
+        <!-- Build Versions -->
+        <nexus.staging.plguin.version>1.7.0</nexus.staging.plguin.version>
+        <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
+        <maven.compiler.version>3.14.1</maven.compiler.version>
+        <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
+        <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
+        <maven.javadoc.plugin.version>3.6.3</maven.javadoc.plugin.version>
     </properties>
 
+    <profiles>
+        <profile>
+            <id>add-java-open-options-for-jdk16+</id>
+            <activation>
+                <jdk>[16,)</jdk>
+            </activation>
+            <properties>
+                <argLine>
+                    --add-opens java.base/java.net=ALL-UNNAMED
+                    --add-opens java.base/sun.net=ALL-UNNAMED
+                </argLine>
+            </properties>
+        </profile>
+    </profiles>
 
     <scm>
         <connection>scm:git:https://github.com/grookage/qtrouper.git</connection>
@@ -288,6 +309,6 @@
 
     <url>https://github.com/grookage/qtrouper</url>
 
-    <version>1.0.2</version>
+    <version>1.0.4-RC1</version>
 
 </project>
