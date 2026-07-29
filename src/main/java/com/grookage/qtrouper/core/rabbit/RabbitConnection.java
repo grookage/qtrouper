@@ -114,17 +114,22 @@ public class RabbitConnection {
 
     @SneakyThrows
     private void configureSsl(ConnectionFactory factory) {
-        final var protocol = Strings.isNullOrEmpty(config.getTlsProtocol())
-                ? TLS : config.getTlsProtocol();
-        final var sslContext = SSLContext.getInstance(protocol);
+        final var hasStores = !Strings.isNullOrEmpty(config.getTrustStorePath())
+                || !Strings.isNullOrEmpty(config.getKeyStorePath());
 
-        final var trustManagers = Strings.isNullOrEmpty(config.getTrustStorePath())
-                ? null : buildTrustManagers();
-        final var keyManagers = Strings.isNullOrEmpty(config.getKeyStorePath())
-                ? null : buildKeyManagers();
-
-        sslContext.init(keyManagers, trustManagers, null);
-        factory.useSslProtocol(sslContext);
+        if (hasStores) {
+            final var protocol = Strings.isNullOrEmpty(config.getTlsProtocol())
+                    ? TLS : config.getTlsProtocol();
+            final var sslContext = SSLContext.getInstance(protocol);
+            final var trustManagers = Strings.isNullOrEmpty(config.getTrustStorePath())
+                    ? null : buildTrustManagers();
+            final var keyManagers = Strings.isNullOrEmpty(config.getKeyStorePath())
+                    ? null : buildKeyManagers();
+            sslContext.init(keyManagers, trustManagers, null);
+            factory.useSslProtocol(sslContext);
+        } else {
+            factory.useSslProtocol();
+        }
 
         final var ciphers = config.getCiphers();
         if (ciphers != null && !ciphers.isEmpty()) {
