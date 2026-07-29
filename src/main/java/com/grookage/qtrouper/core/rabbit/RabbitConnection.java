@@ -115,25 +115,15 @@ public class RabbitConnection {
 
     @SneakyThrows
     private void configureSsl(ConnectionFactory factory) {
-        final var hasStores = !Strings.isNullOrEmpty(config.getTrustStorePath())
-                || !Strings.isNullOrEmpty(config.getKeyStorePath());
+        final var trustManagers = Strings.isNullOrEmpty(config.getTrustStorePath())
+                ? null : buildTrustManagers();
+        final var keyManagers = Strings.isNullOrEmpty(config.getKeyStorePath())
+                ? null : buildKeyManagers();
 
-        if (hasStores) {
-            if (!Strings.isNullOrEmpty(config.getTrustStorePath())) {
-                Preconditions.checkNotNull(config.getTrustStorePassword(),
-                        "Trust store password is required if trust store path has been provided");
-            }
-            if (!Strings.isNullOrEmpty(config.getKeyStorePath())) {
-                Preconditions.checkNotNull(config.getKeyStorePassword(),
-                        "Key store password is required if key store path has been provided");
-            }
+        if (trustManagers != null || keyManagers != null) {
             final var protocol = Strings.isNullOrEmpty(config.getTlsProtocol())
                     ? TLS : config.getTlsProtocol();
             final var sslContext = SSLContext.getInstance(protocol);
-            final var trustManagers = Strings.isNullOrEmpty(config.getTrustStorePath())
-                    ? null : buildTrustManagers();
-            final var keyManagers = Strings.isNullOrEmpty(config.getKeyStorePath())
-                    ? null : buildKeyManagers();
             sslContext.init(keyManagers, trustManagers, null);
             factory.useSslProtocol(sslContext);
         } else {
@@ -142,7 +132,7 @@ public class RabbitConnection {
 
         final var ciphers = config.getCiphers();
         if (ciphers != null && !ciphers.isEmpty()) {
-            validateCiphers(ciphers);
+            warnUnsupportedCiphers(ciphers);
             factory.setSocketConfigurator(socket -> {
                 if (socket instanceof SSLSocket sslSocket) {
                     sslSocket.setEnabledCipherSuites(ciphers.toArray(new String[0]));
@@ -153,10 +143,11 @@ public class RabbitConnection {
 
     @SneakyThrows
     private TrustManager[] buildTrustManagers() {
+        Preconditions.checkNotNull(config.getTrustStorePassword(),
+                "Trust store password is required if trust store path has been provided");
         final var trustStore = KeyStore.getInstance(config.getTrustStoreType());
         try (var stream = new FileInputStream(config.getTrustStorePath())) {
-            trustStore.load(stream, config.getTrustStorePassword() != null
-                    ? config.getTrustStorePassword().toCharArray() : null);
+            trustStore.load(stream, config.getTrustStorePassword().toCharArray());
         }
         final var tmf = TrustManagerFactory.getInstance(
                 TrustManagerFactory.getDefaultAlgorithm());
@@ -166,19 +157,19 @@ public class RabbitConnection {
 
     @SneakyThrows
     private KeyManager[] buildKeyManagers() {
+        Preconditions.checkNotNull(config.getKeyStorePassword(),
+                "Key store password is required if key store path has been provided");
         final var keyStore = KeyStore.getInstance(config.getKeyStoreType());
         try (var stream = new FileInputStream(config.getKeyStorePath())) {
-            keyStore.load(stream, config.getKeyStorePassword() != null
-                    ? config.getKeyStorePassword().toCharArray() : null);
+            keyStore.load(stream, config.getKeyStorePassword().toCharArray());
         }
         final var kmf = KeyManagerFactory.getInstance(
                 KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(keyStore, config.getKeyStorePassword() != null
-                ? config.getKeyStorePassword().toCharArray() : null);
+        kmf.init(keyStore, config.getKeyStorePassword().toCharArray());
         return kmf.getKeyManagers();
     }
 
-    private void validateCiphers(List<String> ciphers) {
+    private void warnUnsupportedCiphers(List<String> ciphers) {
         try {
             final var supported = Set.of(
                     SSLContext.getDefault().getDefaultSSLParameters()
