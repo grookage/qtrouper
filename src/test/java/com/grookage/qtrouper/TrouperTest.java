@@ -25,15 +25,13 @@ import com.grookage.qtrouper.core.rabbit.RabbitConfiguration;
 import com.grookage.qtrouper.core.rabbit.RabbitConnection;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.*;
 
 /**
