@@ -16,6 +16,8 @@
 package com.grookage.qtrouper;
 
 
+import static org.mockito.Mockito.*;
+
 import com.grookage.qtrouper.core.config.QueueConfiguration;
 import com.grookage.qtrouper.core.config.RetryConfiguration;
 import com.grookage.qtrouper.core.config.SidelineConfiguration;
@@ -32,7 +34,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.Mockito.*;
 
 /**
  * @author koushik

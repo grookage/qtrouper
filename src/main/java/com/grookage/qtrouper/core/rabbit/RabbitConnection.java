@@ -22,11 +22,20 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.impl.StandardMetricsCollector;
+import java.io.FileInputStream;
+import java.security.KeyStore;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import javax.inject.Singleton;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +48,8 @@ import lombok.extern.slf4j.Slf4j;
 @Getter
 @SuppressWarnings("unused")
 public class RabbitConnection {
+
+    private static final String TLS = "TLS";
 
     private final RabbitConfiguration config;
     private final MetricRegistry metricRegistry;
@@ -70,7 +81,7 @@ public class RabbitConnection {
             factory.setVirtualHost(config.getVirtualHost());
         }
         if (config.isSslEnabled()) {
-            factory.useSslProtocol(SSLContext.getDefault());
+            configureSsl(factory);
         }
         if (config.isMetricsEnabled() && null != metricRegistry) {
             factory.setMetricsCollector(new StandardMetricsCollector(metricRegistry));
@@ -98,6 +109,76 @@ public class RabbitConnection {
         }
         if (null != connection && connection.isOpen()) {
             connection.close();
+        }
+    }
+
+    @SneakyThrows
+    private void configureSsl(ConnectionFactory factory) {
+        final var protocol = Strings.isNullOrEmpty(config.getTlsProtocol())
+                ? TLS : config.getTlsProtocol();
+        final var sslContext = SSLContext.getInstance(protocol);
+
+        final var trustManagers = Strings.isNullOrEmpty(config.getTrustStorePath())
+                ? null : buildTrustManagers();
+        final var keyManagers = Strings.isNullOrEmpty(config.getKeyStorePath())
+                ? null : buildKeyManagers();
+
+        sslContext.init(keyManagers, trustManagers, null);
+        factory.useSslProtocol(sslContext);
+
+        final var ciphers = config.getCiphers();
+        if (ciphers != null && !ciphers.isEmpty()) {
+            validateCiphers(ciphers);
+            factory.setSocketConfigurator(socket -> {
+                if (socket instanceof SSLSocket sslSocket) {
+                    sslSocket.setEnabledCipherSuites(ciphers.toArray(new String[0]));
+                }
+            });
+        }
+    }
+
+    @SneakyThrows
+    private TrustManager[] buildTrustManagers() {
+        final var trustStore = KeyStore.getInstance(config.getTrustStoreType());
+        try (var stream = new FileInputStream(config.getTrustStorePath())) {
+            trustStore.load(stream, config.getTrustStorePassword() != null
+                    ? config.getTrustStorePassword().toCharArray() : null);
+        }
+        final var tmf = TrustManagerFactory.getInstance(
+                TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(trustStore);
+        return tmf.getTrustManagers();
+    }
+
+    @SneakyThrows
+    private KeyManager[] buildKeyManagers() {
+        final var keyStore = KeyStore.getInstance(config.getKeyStoreType());
+        try (var stream = new FileInputStream(config.getKeyStorePath())) {
+            keyStore.load(stream, config.getKeyStorePassword() != null
+                    ? config.getKeyStorePassword().toCharArray() : null);
+        }
+        final var kmf = KeyManagerFactory.getInstance(
+                KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(keyStore, config.getKeyStorePassword() != null
+                ? config.getKeyStorePassword().toCharArray() : null);
+        return kmf.getKeyManagers();
+    }
+
+    private void validateCiphers(List<String> ciphers) {
+        try {
+            final var supported = Set.of(
+                    SSLContext.getDefault().getDefaultSSLParameters()
+                            .getCipherSuites());
+            ciphers.stream()
+                    .filter(c -> !supported.contains(c))
+                    .forEach(c -> log.warn(
+                            "Configured cipher '{}' is not supported by this JVM. "
+                                    + "Ensure you are using Java cipher names "
+                                    + "(e.g. TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384), "
+                                    + "not OpenSSL names (e.g. ECDHE-RSA-AES256-GCM-SHA384)",
+                            c));
+        } catch (Exception e) {
+            log.warn("Unable to validate configured ciphers", e);
         }
     }
 
