@@ -16,6 +16,7 @@
 package com.grookage.qtrouper.core.rabbit;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
@@ -49,7 +50,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("unused")
 public class RabbitConnection {
 
-    private static final String TLS = "TLS";
+    private static final String TLS = "TLSv1.2";
 
     private final RabbitConfiguration config;
     private final MetricRegistry metricRegistry;
@@ -118,6 +119,14 @@ public class RabbitConnection {
                 || !Strings.isNullOrEmpty(config.getKeyStorePath());
 
         if (hasStores) {
+            if (!Strings.isNullOrEmpty(config.getTrustStorePath())) {
+                Preconditions.checkNotNull(config.getTrustStorePassword(),
+                        "Trust store password is required if trust store path has been provided");
+            }
+            if (!Strings.isNullOrEmpty(config.getKeyStorePath())) {
+                Preconditions.checkNotNull(config.getKeyStorePassword(),
+                        "Key store password is required if key store path has been provided");
+            }
             final var protocol = Strings.isNullOrEmpty(config.getTlsProtocol())
                     ? TLS : config.getTlsProtocol();
             final var sslContext = SSLContext.getInstance(protocol);
