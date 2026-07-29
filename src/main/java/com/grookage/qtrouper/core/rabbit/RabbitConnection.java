@@ -132,7 +132,7 @@ public class RabbitConnection {
 
         final var ciphers = config.getCiphers();
         if (ciphers != null && !ciphers.isEmpty()) {
-            warnUnsupportedCiphers(ciphers);
+            validateCiphers(ciphers);
             factory.setSocketConfigurator(socket -> {
                 if (socket instanceof SSLSocket sslSocket) {
                     sslSocket.setEnabledCipherSuites(ciphers.toArray(new String[0]));
@@ -169,22 +169,20 @@ public class RabbitConnection {
         return kmf.getKeyManagers();
     }
 
-    private void warnUnsupportedCiphers(List<String> ciphers) {
-        try {
-            final var supported = Set.of(
-                    SSLContext.getDefault().getDefaultSSLParameters()
-                            .getCipherSuites());
-            ciphers.stream()
-                    .filter(c -> !supported.contains(c))
-                    .forEach(c -> log.warn(
-                            "Configured cipher '{}' is not supported by this JVM. "
-                                    + "Ensure you are using Java cipher names "
-                                    + "(e.g. TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384), "
-                                    + "not OpenSSL names (e.g. ECDHE-RSA-AES256-GCM-SHA384)",
-                            c));
-        } catch (Exception e) {
-            log.warn("Unable to validate configured ciphers", e);
-        }
+    @SneakyThrows
+    private void validateCiphers(List<String> ciphers) {
+        final var supported = Set.of(
+                SSLContext.getDefault().getSupportedSSLParameters()
+                        .getCipherSuites());
+        final var unsupported = ciphers.stream()
+                .filter(c -> !supported.contains(c))
+                .toList();
+        Preconditions.checkArgument(unsupported.isEmpty(),
+                "Unsupported cipher(s) configured: %s. "
+                        + "Ensure you are using Java cipher names "
+                        + "(e.g. TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384), "
+                        + "not OpenSSL names (e.g. ECDHE-RSA-AES256-GCM-SHA384)",
+                unsupported);
     }
 
     public Channel channel() {
