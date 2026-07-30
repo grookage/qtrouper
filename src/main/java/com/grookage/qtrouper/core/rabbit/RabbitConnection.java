@@ -127,7 +127,7 @@ public class RabbitConnection {
             sslContext.init(keyManagers, trustManagers, null);
             factory.useSslProtocol(sslContext);
         } else {
-            factory.useSslProtocol();
+            factory.useSslProtocol(config.getTlsProtocol());
         }
 
         final var ciphers = config.getCiphers();
