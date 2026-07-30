@@ -1,6 +1,7 @@
-### Version 1.0.4-RC2
+### Version 1.0.5
 
-- Minor Fix : On a default case, use the TLS channel specified in the configuration. 
+- Minor Fix : On a default case, use the TLS channel specified in the configuration.Defaults to 1.2
+- Releasing a minor from RC, the TLS issue seems to be resolved. 
 
 ### Version 1.0.4-RC1
 
