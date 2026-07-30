@@ -47,7 +47,7 @@ public class RabbitConfiguration {
     private String password = "";
     private String virtualHost;
     private boolean sslEnabled;
-    private String tlsProtocol;
+    private String tlsProtocol = "TLSv1.2";
     private List<String> ciphers;
     private String trustStorePath;
     private String trustStorePassword;

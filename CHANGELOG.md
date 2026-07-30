@@ -1,3 +1,8 @@
+### Version 1.0.5
+
+- Minor Fix : On a default case, use the TLS channel specified in the configuration.Defaults to 1.2
+- Releasing a minor from RC, the TLS issue seems to be resolved. 
+
 ### Version 1.0.4-RC1
 
 - Use JVM's default SSLContext for TLS connections, enabling auto-negotiation of the highest supported protocol (TLSv1.3 on Java 11+)
@@ -28,9 +33,9 @@
   headers are not present.
 - Doing a minor, for this is a bug fix.
 
-## Impact
+    #### Impact
 
-If you are using trouper to publish messages and read off it, this won't impact you. But when you
-are publishing messages using another RMQ client or an adhoc script that pushes messages into the
-queue without the headers, required (that trouper would've organically added), you'll see this
-issue. 
+    If you are using trouper to publish messages and read off it, this won't impact you. But when you
+    are publishing messages using another RMQ client or an adhoc script that pushes messages into the
+    queue without the headers, required (that trouper would've organically added), you'll see this
+    issue. 
