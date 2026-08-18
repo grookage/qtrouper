@@ -250,7 +250,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <amqp.version>5.18.0</amqp.version>
+        <amqp.version>5.33.1</amqp.version>
         <cglib.version>3.2.5</cglib.version>
         <dropwizard.version>2.1.12</dropwizard.version>
         <guava.version>23.0</guava.version>
